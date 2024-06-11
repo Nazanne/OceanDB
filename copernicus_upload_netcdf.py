@@ -5,8 +5,8 @@ import struct
 from io import BytesIO
 import glob
 import os
-import calendar
 import time
+from dateutil.relativedelta import relativedelta
 
 # Connection string
 def db_connection():
@@ -23,9 +23,6 @@ def extract_data_from_netcdf(file_path):
 	ds = nc.Dataset(file_path, 'r')
 
 	import_metadata_to_psql(ds)
-
-	# Print out the variables in the file
-	print(ds.variables.keys())
 
 	# Don't scale most variables so they are stored more efficiently in db
 	ds.variables['sla_unfiltered'].set_auto_maskandscale(False)
@@ -66,80 +63,83 @@ def extract_data_from_netcdf(file_path):
 
 # Define the function to import data into PostgreSQL using copy_from in binary format
 def import_data_to_postgresql(fname, time_data, lat_data, lon_data, cycle_data, track_data, sla_un_data, sla_f_data, dac_data, o_tide_data, i_tide_data, lwe_data, mdt_data, tpa_corr_data):
-
-
+	conn = db_connection()
+	cur = conn.cursor()
 	# Create table if not exists
 # =============================================================================
 # 	create_table_query = '''
-	# 		-- Table: public.cop_along
+# -- Table: public.cop_along
 
 # -- DROP TABLE IF EXISTS public.cop_along;
 
 # CREATE TABLE IF NOT EXISTS public.cop_along
 # (
-#     idx bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
-#     nme text COLLATE pg_catalog."default",
-#     track smallint,
-#     cycle smallint,
-#     lat double precision,
-#     lon double precision,
-#     sla_unfiltered smallint,
-#     sla_filtered smallint,
-#     "time" timestamp without time zone,
-#     dac smallint,
-#     ocean_tide smallint,
-#     internal_tide smallint,
-#     lwe smallint,
-#     mdt smallint,
-#     tpa_correction smallint,
-#     cat_point geometry(Point,4326) GENERATED ALWAYS AS (st_setsrid(st_makepoint(lon, lat), 4326)) STORED,
-#     CONSTRAINT cop_along_pkey PRIMARY KEY ("time", idx)
+# 	idx bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 ),
+# 	nme text COLLATE pg_catalog."default",
+# 	track smallint,
+# 	cycle smallint,
+# 	lat double precision,
+# 	lon double precision,
+# 	sla_unfiltered smallint,
+# 	sla_filtered smallint,
+# 	"time" timestamp without time zone,
+# 	dac smallint,
+# 	ocean_tide smallint,
+# 	internal_tide smallint,
+# 	lwe smallint,
+# 	mdt smallint,
+# 	tpa_correction smallint,
+# 	cat_point geometry(Point,4326) GENERATED ALWAYS AS (st_setsrid(st_makepoint(lon, lat), 4326)) STORED,
+# 	CONSTRAINT cop_along_pkey PRIMARY KEY ("time", idx)
 # ) PARTITION BY RANGE ("time");
 
 # ALTER TABLE IF EXISTS public.cop_along
-#     OWNER to postgres;
+# 	OWNER to postgres;
 # -- Index: cat_pt_date
 
 # -- DROP INDEX IF EXISTS public.cat_pt_date;
 
 # CREATE INDEX IF NOT EXISTS cat_pt_date
-#     ON public.cop_along USING gist
-#     (cat_point)
-#     WITH (buffering=auto);
+# 	ON public.cop_along USING gist
+# 	(cat_point)
+# 	WITH (buffering=auto);
 # -- Index: cat_pt_date_idx
 
 # -- DROP INDEX IF EXISTS public.cat_pt_date_idx;
 
 # CREATE INDEX IF NOT EXISTS cat_pt_date_idx
-#     ON public.cop_along USING gist
-#     (cat_point, ("time"::date))
-#     WITH (buffering=auto);
+# 	ON public.cop_along USING gist
+# 	(cat_point, ("time"::date))
+# 	WITH (buffering=auto);
 # -- Index: cat_pt_idx
 
 # -- DROP INDEX IF EXISTS public.cat_pt_idx;
 
 # CREATE INDEX IF NOT EXISTS cat_pt_idx
-#     ON public.cop_along USING gist
-#     (cat_point)
-#     WITH (buffering=auto);
+# 	ON public.cop_along USING gist
+# 	(cat_point)
+# 	WITH (buffering=auto);
 # -- Index: date_idx
 
 # -- DROP INDEX IF EXISTS public.date_idx;
 
 # CREATE INDEX IF NOT EXISTS date_idx
-#     ON public.cop_along USING btree
-#     (("time"::date) ASC NULLS LAST)
-#     WITH (deduplicate_items=True);
+# 	ON public.cop_along USING btree
+# 	(("time"::date) ASC NULLS LAST)
+# 	WITH (deduplicate_items=True);
 # -- Index: nme_alng_idx
 
 # -- DROP INDEX IF EXISTS public.nme_alng_idx;
 
 # CREATE INDEX IF NOT EXISTS nme_alng_idx
-#     ON public.cop_along USING btree
-#     (nme COLLATE pg_catalog."default" ASC NULLS LAST)
-#     WITH (deduplicate_items=True);
+# 	ON public.cop_along USING btree
+# 	(nme COLLATE pg_catalog."default" ASC NULLS LAST)
+# 	WITH (deduplicate_items=True);
 # 	'''
-# 	cur.execute(create_table_query)
+# 	try:
+# 		cur.execute(create_table_query)
+# 	except:
+# 		print('Could not create database')
 # 	conn.commit()
 # =============================================================================
 
@@ -171,10 +171,11 @@ def import_data_to_postgresql(fname, time_data, lat_data, lon_data, cycle_data, 
 	output.write(struct.pack('!h', -1))  # Write the COPY binary trailer
 	output.seek(0)
 	# Connect to the PostgreSQL database
-	conn = db_connection()
-	cur = conn.cursor()# 	postgreSQL_select_Query = 'SELECT * FROM cop_along limit 10;'
 	insert_query = "COPY cop_along ( nme, track, cycle, lat, lon, sla_unfiltered, sla_filtered, time, dac, ocean_tide, internal_tide, lwe, mdt, tpa_correction) FROM STDIN WITH (FORMAT binary);"
-	cur.copy_expert(insert_query, output)
+	try:
+		cur.copy_expert(insert_query, output)
+	except Exception as err:
+		print(f"Insert failed for {fname}: {err}")
 	conn.commit()
 	conn.close()
 # End import_data_to_postgresql
@@ -183,33 +184,33 @@ def import_metadata_to_psql(ds):
 	# 	create_table_query = '''
 	# 		CREATE TABLE
 	#   public.cop_meta (
-	#     nme text NOT NULL,
-	#     conventions text NULL,
-	#     metadata_conventions text NULL,
-	#     cdm_data_type text NULL,
-	#     comment
-	#       text NULL,
-	#       contact text NULL,
-	#       creator_email text NULL,
-	#       creator_name text NULL,
-	#       creator_url text NULL,
-	#       date_created timestamp with time zone NULL,
-	#       date_issued timestamp with time zone NULL,
-	#       date_modified timestamp with time zone NULL,
-	#       history text NULL,
-	#       institution text NULL,
-	#       keywords text NULL,
-	#       license text NULL,
-	#       platform text NULL,
-	#       processing_level text NULL,
-	#       product_version text NULL,
-	#       project text NULL,
-	#       "references" text NULL,
-	#       software_version text NULL,
-	#       source text NULL,
-	#       ssalto_duacs_comment text NULL,
-	#       summary text NULL,
-	#       title text NULL
+	#	 nme text NOT NULL,
+	#	 conventions text NULL,
+	#	 metadata_conventions text NULL,
+	#	 cdm_data_type text NULL,
+	#	 comment
+	#	   text NULL,
+	#	   contact text NULL,
+	#	   creator_email text NULL,
+	#	   creator_name text NULL,
+	#	   creator_url text NULL,
+	#	   date_created timestamp with time zone NULL,
+	#	   date_issued timestamp with time zone NULL,
+	#	   date_modified timestamp with time zone NULL,
+	#	   history text NULL,
+	#	   institution text NULL,
+	#	   keywords text NULL,
+	#	   license text NULL,
+	#	   platform text NULL,
+	#	   processing_level text NULL,
+	#	   product_version text NULL,
+	#	   project text NULL,
+	#	   "references" text NULL,
+	#	   software_version text NULL,
+	#	   source text NULL,
+	#	   ssalto_duacs_comment text NULL,
+	#	   summary text NULL,
+	#	   title text NULL
 	#   );
 
 	# ALTER TABLE
@@ -271,8 +272,11 @@ def create_partitions(min_date, max_date, partition_duration=12):
 		month = 1
 		month_str = '01'
 		month_partition_str = ''
-		max_month = '12'
-		last_day_month = '31'
+		next_year = date + relativedelta(years = 1)
+		next_year.replace(day = 1)
+		next_month = date + relativedelta(months =1 )
+		next_month.replace(day = 1)
+		to_partition = next_year.date()
 
 		if partition_duration == 1:
 			month = date.month
@@ -281,16 +285,22 @@ def create_partitions(min_date, max_date, partition_duration=12):
 			else:
 				month_str = f"{month}"
 			month_partition_str = month_str
-			max_month = month_str
-			last_day_month = f"{calendar.monthrange(year, month)[1]}"
+			to_partition = next_month.date()
+
 
 		partition_name = f"cop_along_{str(year)}{month_partition_str}" # Monthly partions are named cop_along_YYYYMM and yearly are named cop_along_YYYY
-		min_part_date = f"{year}-{month_str}-01"
-		max_part_date = f"{year}-{max_month}-{last_day_month}"
+		min_partition_date = f"{year}-{month_str}-01 00:00:00"
 		query = f"""CREATE TABLE IF NOT EXISTS {partition_name} PARTITION OF cop_along
-			FOR VALUES FROM ('{min_part_date}') TO ('{max_part_date}');"""
-		cur.execute(query)
-	conn.commit # If 2 partitions are required one commit will handle both execute commands.
+			FOR VALUES FROM ('{min_partition_date}') TO ('{to_partition} 00:00:00');"""
+# 		print(query)
+		if partition_name not in partitions_created:
+			try:
+				cur.execute(query)
+			except Exception as err:
+				print(f"Unable to create partition: {err}")
+			else:
+				partitions_created.append(partition_name)
+			conn.commit()
 	cur.close()
 	conn.close()
 	return
@@ -301,6 +311,7 @@ def create_partitions(min_date, max_date, partition_duration=12):
 # Main function
 if __name__ == "__main__":
 	directory = '/Users/briancurtis/Documents/Eddy/Along_files2'
+	partitions_created = [] # Keep track of partitions created so we can avoid round trips to the database.
 	start = time.time()
 	for filename in glob.glob(directory + '/*.nc'):
 		names = [os.path.basename(x) for x in glob.glob(filename)]
@@ -310,6 +321,5 @@ if __name__ == "__main__":
 		import_data_to_postgresql(fname, time_data, lat_data, lon_data, cycle_data, track_data, sla_un_data, sla_f_data, dac_data, o_tide_data, i_tide_data, lwe_data, mdt_data, tpa_corr_data)
 		import_end = time.time()
 		print(f"{fname} import time: {import_end - import_start}")
-		break
 	end = time.time()
 	print(f"Script end. Total time: {end - start}")
