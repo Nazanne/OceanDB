@@ -272,11 +272,14 @@ def create_partitions(min_date, max_date, partition_duration=12):
 		month = 1
 		month_str = '01'
 		month_partition_str = ''
-		next_year = date + relativedelta(years = 1)
-		next_year.replace(day = 1)
-		next_month = date + relativedelta(months =1 )
-		next_month = next_month.replace(day = 1)
-		to_partition = next_year.date()
+		this_year = date.replace(day = 1, month=1, hour=0, minute=0, second=0, microsecond=0)
+		next_year = date + relativedelta(years=1)
+		next_year = next_year.replace(day = 1, month=1, hour=0, minute=0, second=0, microsecond=0)
+		this_month = date.replace(day = 1, hour=0, minute=0, second=0, microsecond=0)
+		next_month = date + relativedelta(months=1 )
+		next_month = next_month.replace(day = 1, hour=0, minute=0, second=0, microsecond=0)
+		to_partition = next_year
+		min_partition = this_year
 
 		if partition_duration == 1:
 			month = date.month
@@ -285,13 +288,14 @@ def create_partitions(min_date, max_date, partition_duration=12):
 			else:
 				month_str = f"{month}"
 			month_partition_str = month_str
-			to_partition = next_month.date()
-
+			to_partition = next_month
+			min_partition = this_month
 
 		partition_name = f"cop_along_{str(year)}{month_partition_str}" # Monthly partions are named cop_along_YYYYMM and yearly are named cop_along_YYYY
-		min_partition_date = f"{year}-{month_str}-01 00:00:00"
+		min_partition_date = f"{min_partition}"
+
 		query = f"""CREATE TABLE IF NOT EXISTS {partition_name} PARTITION OF cop_along
-			FOR VALUES FROM ('{min_partition_date}') TO ('{to_partition} 00:00:00');"""
+			FOR VALUES FROM ('{min_partition_date}') TO ('{to_partition}');"""
 # 		print(query)
 		if partition_name not in partitions_created:
 			try:
