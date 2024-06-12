@@ -275,7 +275,7 @@ def create_partitions(min_date, max_date, partition_duration=12):
 		next_year = date + relativedelta(years = 1)
 		next_year.replace(day = 1)
 		next_month = date + relativedelta(months =1 )
-		next_month.replace(day = 1)
+		next_month = next_month.replace(day = 1)
 		to_partition = next_year.date()
 
 		if partition_duration == 1:
@@ -300,7 +300,7 @@ def create_partitions(min_date, max_date, partition_duration=12):
 				print(f"Unable to create partition: {err}")
 			else:
 				partitions_created.append(partition_name)
-			conn.commit()
+				conn.commit()
 	cur.close()
 	conn.close()
 	return
@@ -313,6 +313,7 @@ if __name__ == "__main__":
 	directory = '/Users/briancurtis/Documents/Eddy/Along_files2'
 	partitions_created = [] # Keep track of partitions created so we can avoid round trips to the database.
 	start = time.time()
+	i = 1
 	for filename in glob.glob(directory + '/*.nc'):
 		names = [os.path.basename(x) for x in glob.glob(filename)]
 		fname = names[0] #filename will be used to link data to metadata
@@ -321,5 +322,8 @@ if __name__ == "__main__":
 		import_data_to_postgresql(fname, time_data, lat_data, lon_data, cycle_data, track_data, sla_un_data, sla_f_data, dac_data, o_tide_data, i_tide_data, lwe_data, mdt_data, tpa_corr_data)
 		import_end = time.time()
 		print(f"{fname} import time: {import_end - import_start}")
+		i += 1
+		if i == 100:
+			break
 	end = time.time()
 	print(f"Script end. Total time: {end - start}")
