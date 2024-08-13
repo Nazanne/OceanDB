@@ -653,9 +653,30 @@ class AlongTrack:
         end = time.time()
         print(f"Script end. Total time: {end - start}")
 
-    def insert_along_track_data_from_netcdf_with_tuples(self, directory):
+    # Jeffrey's version... specify specific mission directory.
+    # def insert_along_track_data_from_netcdf_with_tuples(self, directory):
+    #     start = time.time()
+    #     for file_path in glob.glob(directory + '/*.nc'):
+    #         names = [os.path.basename(x) for x in glob.glob(file_path)]
+    #         filename = names[0]  # filename will be used to link data to metadata
+    #         data = self.extract_data_tuple_from_netcdf(file_path, filename)
+    #         import_start = time.time()
+    #         self.import_data_tuple_to_postgresql(data, filename)
+    #         import_end = time.time()
+    #         print(f"{filename} import time: {import_end - import_start}")
+    #     end = time.time()
+    #     print(f"Script end. Total time: {end - start}")
+
+    # Cim's version... provide general directory and missions.
+    def insert_along_track_data_from_netcdf_with_tuples(self, directory, missions):
         start = time.time()
-        for file_path in glob.glob(directory + '/*.nc'):
+        # copied code from satmapkit_utilities/open_cmems_local to get list of filenamess.
+        filenames = [fn for fn in glob.glob(os.path.join(directory,'**/*.nc'),recursive=True) if any('_'+m+'-l3' in fn for m in missions)]
+        # loop over filesnames.       
+        for file_path in filenames:
+            # Add "missions" to call, and pull directory from config.yaml. 
+            #  use Cim's filename grabber
+            # loop over the missions
             names = [os.path.basename(x) for x in glob.glob(file_path)]
             filename = names[0]  # filename will be used to link data to metadata
             data = self.extract_data_tuple_from_netcdf(file_path, filename)
@@ -664,7 +685,7 @@ class AlongTrack:
             import_end = time.time()
             print(f"{filename} import time: {import_end - import_start}")
         end = time.time()
-        print(f"Script end. Total time: {end - start}")
+        print(f"Script end. Total time: {end - start}")    
 
     ######################################################
     #
