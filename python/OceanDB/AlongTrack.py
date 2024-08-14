@@ -26,7 +26,7 @@ class AlongTrack:
     #
     ######################################################
 
-    def __init__(self, host="", username="", password="", port=5432, db_name='ocean'):
+    def __init__(self, host="", username="", password="", port=5432, db_name='ocean', nc_files_path=""):
         with open(os.path.join(os.path.dirname(__file__), '../config.yaml'), 'r') as param_file:
             along_params = yaml.full_load(param_file)
             if 'db_connect' in along_params:
@@ -40,6 +40,10 @@ class AlongTrack:
                     self.port = along_params['db_connect']['port']
                 if 'db_name' in along_params['db_connect']:
                     self.db_name = along_params['db_connect']['db_name']
+            if 'copernicus_marine' in along_params:
+                if 'nc_files_path' in along_params['copernicus_marine']:
+                    self.nc_files_path = along_params['copernicus_marine']['nc_files_path']
+
 
         # locally defined variable override the settings in the config file
         if host:
@@ -52,6 +56,8 @@ class AlongTrack:
             self.port = port
         if db_name:
             self.db_name = db_name
+        if nc_files_path:
+            self.nc_files_path = nc_files_path
 
         self.__partitions_created = []
 
@@ -670,15 +676,14 @@ class AlongTrack:
     # Cim's version... provide general directory and missions.
     def insert_along_track_data_from_netcdf_with_tuples(self, directory, missions):
         start = time.time()
+        # directory = {self.nc_files_path}
         # copied code from satmapkit_utilities/open_cmems_local to get list of filenamess.
-        filenames = [fn for fn in glob.glob(os.path.join(directory,'**/*.nc'),recursive=True) if any('_'+m+'-l3' in fn for m in missions)]
+        file_paths = [fn for fn in glob.glob(os.path.join(directory,'**/*.nc'),recursive=True) if any('_'+m+'-l3' in fn for m in missions)]
         # loop over filesnames.       
-        for file_path in filenames:
-            # Add "missions" to call, and pull directory from config.yaml. 
-            #  use Cim's filename grabber
-            # loop over the missions
-            names = [os.path.basename(x) for x in glob.glob(file_path)]
-            filename = names[0]  # filename will be used to link data to metadata
+        for file_path in file_paths:
+        #     names = [os.path.basename(x) for x in glob.glob(file_path)]
+        #     filename = names[0]  # filename will be used to link data to metadata
+            filename = [os.path.basename(x) for x in glob.glob(file_path)]
             data = self.extract_data_tuple_from_netcdf(file_path, filename)
             import_start = time.time()
             self.import_data_tuple_to_postgresql(data, filename)
@@ -787,7 +792,7 @@ class AlongTrack:
         deltaLambda = (np.array(lon) - np.array(lon0)) * np.pi / 180
         sinLambdaCosPhi = np.sin(deltaLambda) * np.cos(phi)
         x = (R / 2) * np.log((1 + sinLambdaCosPhi) / (1 - sinLambdaCosPhi))
-        y = R * np.atan(np.tan(phi) / np.cos(deltaLambda))
+        y = R * np.arctan(np.tan(phi) / np.cos(deltaLambda))
 
         return x, y
 
@@ -797,7 +802,7 @@ class AlongTrack:
         WGS84a = 6378137
         R = k0 * WGS84a
 
-        lon = (180 / np.pi) * np.atan(np.sinh(x / R) / np.cos(y / R)) + lon0
-        lat = (180 / np.pi) * np.asin(np.sin(y / R) / np.cosh(x / R))
+        lon = (180 / np.pi) * np.arctan(np.sinh(x / R) / np.cos(y / R)) + lon0
+        lat = (180 / np.pi) * np.arcsin(np.sin(y / R) / np.cosh(x / R))
 
         return lat, lon
