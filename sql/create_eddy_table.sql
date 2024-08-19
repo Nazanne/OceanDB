@@ -30,5 +30,5 @@ CREATE TABLE IF NOT EXISTS public.{table_name}
     track int,
     cyclonic_type smallint,
     eddy_point geography(Point,4326) GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography) STORED,
-    CONSTRAINT eddy_pkey PRIMARY KEY (observation_number, track)
+    CONSTRAINT eddy_pkey PRIMARY KEY (observation_number, track, cyclonic_type)
 )
