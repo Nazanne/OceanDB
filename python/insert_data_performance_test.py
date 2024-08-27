@@ -3,10 +3,11 @@ from OceanDB.AlongTrack import AlongTrack
 
 # list of missions to add to database
 missions = ['tp', 'j1', 'j2', 'j3', 's3a', 's3b', 's6a-lr']
+missions = ['j3', 's3a', 's3b', 's6a-lr']
 # missions = ['s6a-lr']
 # missions = ['j2g']
 
-atdb = AlongTrack(db_name='ocean')
+atdb = AlongTrack(db_name='ocean2')
 
 # atdb.drop_database()
 # atdb.drop_along_track_metadata_table()
@@ -24,6 +25,6 @@ atdb = AlongTrack(db_name='ocean')
 
 # atdb.truncate_along_track_table()
 # atdb.truncate_along_track_metadata_table()
-atdb.drop_along_track_indices()
+# atdb.drop_along_track_indices()
 atdb.insert_along_track_data_from_netcdf_with_tuples(missions)
 atdb.create_along_track_indices()

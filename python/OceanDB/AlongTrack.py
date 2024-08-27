@@ -213,6 +213,9 @@ class AlongTrack(OceanDB):
         tokenized_query = self.sql_query_with_name('create_along_track_index_point_date.sql')
         query_create_combined_point_date_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
 
+        tokenized_query = self.sql_query_with_name('create_along_track_index_point_date_mission.sql')
+        query_create_point_date_mission_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
+
         with pg.connect(self.connect_string()) as conn:
             with conn.cursor() as cur:
                 cur.execute(query_create_point_index)
@@ -222,6 +225,7 @@ class AlongTrack(OceanDB):
                 cur.execute(create_along_track_index_time)
                 cur.execute(create_along_track_index_mission)
                 cur.execute(query_create_combined_point_date_index)
+                cur.execute(query_create_point_date_mission_index)
                 conn.commit()
 
     def drop_along_track_indices(self):
@@ -248,6 +252,9 @@ class AlongTrack(OceanDB):
         tokenized_query = self.sql_query_with_name('drop_along_track_index_point_date.sql')
         query_drop_combined_point_date_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
 
+        tokenized_query = self.sql_query_with_name('drop_along_track_index_point_date_mission.sql')
+        query_drop_point_date_mission_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
+
         with pg.connect(self.connect_string()) as conn:
             with conn.cursor() as cur:
                 cur.execute(query_drop_point_index)
@@ -257,6 +264,7 @@ class AlongTrack(OceanDB):
                 cur.execute(drop_along_track_index_time)
                 cur.execute(drop_along_track_index_mission)
                 cur.execute(query_drop_combined_point_date_index)
+                cur.execute(query_drop_point_date_mission_index)
                 conn.commit()
 
     ######################################################
@@ -541,7 +549,7 @@ class AlongTrack(OceanDB):
             data = {
                 'time': time_data,
                 'latitude': ds.variables['latitude'][:],
-                'longitude': ds.variables['longitude'][:],
+                'longitude': (ds.variables['longitude'][:] + 180) % 360 - 180,
                 'cycle': ds.variables['cycle'][:],
                 'track': ds.variables['track'][:],
                 'sla_unfiltered': ds.variables['sla_unfiltered'][:],
@@ -554,7 +562,7 @@ class AlongTrack(OceanDB):
                 'tpa_correction': ds.variables['tpa_correction'][:]
             }
 
-            data['longitude'][:] = (data['longitude'][:] + 180) % 360 - 180
+            data['basin_id'] = self.basin_mask(data['latitude'][:], data['longitude'][:])
 
             ds.close()
 
@@ -567,7 +575,7 @@ class AlongTrack(OceanDB):
             "COPY {along_tbl_nme} ( file_name, track, cycle, latitude, longitude, sla_unfiltered, sla_filtered, date_time, dac, ocean_tide, internal_tide, lwe, mdt, tpa_correction) FROM STDIN").format(
             along_tbl_nme=sql.Identifier(self.along_track_table_name))
         copy_query = sql.SQL(
-            "COPY {along_tbl_nme} (  file_name, track, cycle, latitude, longitude, sla_unfiltered, sla_filtered, date_time, dac, ocean_tide, internal_tide, lwe, mdt) FROM STDIN").format(
+            "COPY {along_tbl_nme} (  file_name, track, cycle, latitude, longitude, sla_unfiltered, sla_filtered, date_time, dac, ocean_tide, internal_tide, lwe, mdt, basin_id) FROM STDIN").format(
             along_tbl_nme=sql.Identifier(self.along_track_table_name))
 
         with pg.connect(self.connect_string()) as connection:
@@ -587,7 +595,8 @@ class AlongTrack(OceanDB):
                             data['ocean_tide'][i],
                             data['internal_tide'][i],
                             data['lwe'][i],
-                            data['mdt'][i]
+                            data['mdt'][i],
+                            data['basin_id'][i]
                         ])
 
 

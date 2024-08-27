@@ -10,7 +10,7 @@ from OceanDB.AlongTrack import AlongTrack
 # directory_nc = along_params.get('nc_files_path')
 
 # atdb = AlongTrackDatabase(host, username, password, port)
-atdb = AlongTrack(db_name='ocean')
+atdb = AlongTrack(db_name='ocean2')
 
 # atdb.drop_database()
 
@@ -18,7 +18,6 @@ atdb = AlongTrack(db_name='ocean')
 atdb.create_database()
 
 atdb.create_along_track_table()
-atdb.create_along_track_indices()
 atdb.create_along_track_metadata_table()
 
 atdb.create_basin_table()
