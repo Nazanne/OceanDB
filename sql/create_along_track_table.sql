@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.{table_name}
     lwe smallint,
     mdt smallint,
     tpa_correction smallint,
+    basin_id smallint NOT NULL,
     along_track_point geography(Point,4326) GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography) STORED,
     CONSTRAINT cop_along_pkey PRIMARY KEY (date_time, id)
 ) PARTITION BY RANGE (date_time)
