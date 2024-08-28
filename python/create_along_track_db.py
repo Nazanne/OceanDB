@@ -10,7 +10,7 @@ from OceanDB.AlongTrack import AlongTrack
 # directory_nc = along_params.get('nc_files_path')
 
 # atdb = AlongTrackDatabase(host, username, password, port)
-atdb = AlongTrack(db_name='ocean2')
+atdb = AlongTrack()
 
 # atdb.drop_database()
 
