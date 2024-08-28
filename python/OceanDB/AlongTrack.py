@@ -21,6 +21,8 @@ class AlongTrack(OceanDB):
     ocean_basins_connections_table_name: str = 'basin_connection'
     variable_scale_factor: dict = dict()
     variable_add_offset: dict = dict()
+    missions = ['al', 'alg', 'c2', 'c2n', 'e1g', 'e1', 'e2', 'en', 'enn', 'g2', 'h2a', 'h2b', 'j1g', 'j1', 'j1n', 'j2g',
+                'j2', 'j2n', 'j3', 'j3n', 's3a', 's3b', 's6a-lr', 'tp', 'tpn']
 
     ######################################################
     #
@@ -192,41 +194,81 @@ class AlongTrack(OceanDB):
         tokenized_query = self.sql_query_with_name('create_along_track_index_point.sql')
         query_create_point_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
 
+        print(f"Building along_track geographic point index")
+        start = time.time()
+        with pg.connect(self.connect_string()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query_create_point_index)
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
+
         tokenized_query = self.sql_query_with_name('create_along_track_index_point_geom.sql')
         query_create_point_geom_index = sql.SQL(tokenized_query).format(
             table_name=sql.Identifier(self.along_track_table_name))
 
-        tokenized_query = self.sql_query_with_name('create_along_track_index_date.sql')
-        query_create_date_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
+        print(f"Building along_track geometric point index")
+        start = time.time()
+        with pg.connect(self.connect_string()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query_create_point_geom_index)
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
+
+        # tokenized_query = self.sql_query_with_name('create_along_track_index_date.sql')
+        # query_create_date_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
+        #
+        # print(f"Building along_track date index")
+        # start = time.time()
+        # with pg.connect(self.connect_string()) as conn:
+        #     with conn.cursor() as cur:
+        #         cur.execute(query_create_date_index)
+        # end = time.time()
+        # print(f"Finished. Total time: {end - start}")
 
         tokenized_query = self.sql_query_with_name('create_along_track_index_filename.sql')
         query_create_filename_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
+
+        print(f"Building along_track filename index")
+        start = time.time()
+        with pg.connect(self.connect_string()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query_create_filename_index)
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
 
         tokenized_query = self.sql_query_with_name('create_along_track_index_time.sql')
         create_along_track_index_time = sql.SQL(tokenized_query).format(
             table_name=sql.Identifier(self.along_track_table_name))
 
-        tokenized_query = self.sql_query_with_name('create_along_track_index_mission.sql')
-        create_along_track_index_mission = sql.SQL(tokenized_query).format(
-            table_name=sql.Identifier(self.along_track_table_name))
+        print(f"Building along_track time index")
+        start = time.time()
+        with pg.connect(self.connect_string()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(create_along_track_index_time)
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
 
         tokenized_query = self.sql_query_with_name('create_along_track_index_point_date.sql')
         query_create_combined_point_date_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
 
+        print(f"Building along_track (point, time) index")
+        start = time.time()
+        with pg.connect(self.connect_string()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query_create_combined_point_date_index)
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
+
         tokenized_query = self.sql_query_with_name('create_along_track_index_point_date_mission.sql')
         query_create_point_date_mission_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
 
+        print(f"Building along_track (point, time, mission) index")
+        start = time.time()
         with pg.connect(self.connect_string()) as conn:
             with conn.cursor() as cur:
-                cur.execute(query_create_point_index)
-                cur.execute(query_create_point_geom_index)
-                cur.execute(query_create_date_index)
-                cur.execute(query_create_filename_index)
-                cur.execute(create_along_track_index_time)
-                cur.execute(create_along_track_index_mission)
-                cur.execute(query_create_combined_point_date_index)
                 cur.execute(query_create_point_date_mission_index)
-                conn.commit()
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
 
     def drop_along_track_indices(self):
         tokenized_query = self.sql_query_with_name('drop_along_track_index_point.sql')
@@ -788,41 +830,44 @@ class AlongTrack(OceanDB):
 
         return x, y, sla, t
 
-    def map_points_in_spatialtemporal_window(self, latitudes, longitudes, date, distance=500000, time_window=timedelta(seconds=856710), should_basin_mask=1):
+    def projected_geographic_points_in_spatialtemporal_windows(self, latitudes, longitudes, date, distance=500000, time_window=timedelta(seconds=856710), should_basin_mask=1, missions=None):
+        i = 0
+        for latitude, longitude, delta_t, sla in self.geographic_points_in_spatialtemporal_windows(latitudes, longitudes, date, distance, time_window, should_basin_mask, missions):
+            [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitudes[i], longitudes[i], longitudes[i])
+            [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude, longitudes[i])
+            delta_x = x - x0
+            delta_y = y - y0
+            i = i + 1
+            yield delta_x, delta_y, delta_t, sla
+
+    def geographic_points_in_spatialtemporal_windows(self, latitudes, longitudes, date, distance=500000, time_window=timedelta(seconds=856710), should_basin_mask=1, missions=None):
         if should_basin_mask == 1:
             tokenized_query = self.sql_query_with_name('geographic_points_in_spatialtemporal_window_minimum.sql')
         else:
             tokenized_query = self.sql_query_with_name('geographic_points_in_spatialtemporal_window_minimum_nomask.sql')
-        missions = ['tp', 'j1', 'j2', 'j3', 's3a', 's3b', 's6a-lr']
-        missions = ['s3b','s6a-lr']
+
+        if missions is None:
+            missions = self.missions
+
         query = sql.SQL(tokenized_query).format(central_date_time=date,
                                                 distance=distance,
                                                 time_delta=time_window/2,
                                                 missions=sql.SQL(',').join(missions))
-
-        latlons = [{"latitude": latitudes, "longitude": longitudes} for latitudes, longitudes in zip(latitudes, longitudes)]
+        basin_ids = self.basin_mask(latitudes, longitudes)
+        connected_basin_ids = list( map(self.basin_connection_map.get, basin_ids) )
+        params = [{"latitude": latitudes, "longitude": longitudes, "basin_id": basin_ids, "connected_basin_ids": connected_basin_ids} for latitudes, longitudes, basin_ids, connected_basin_ids in zip(latitudes, longitudes, basin_ids, connected_basin_ids)]
 
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
-                cursor.executemany(query, latlons, returning=True)
+                cursor.executemany(query, params, returning=True)
                 i = 0
                 while True:
                     data = cursor.fetchall()
-                    # yield [0], [0], [0], [0]
                     longitude = np.array([data_i[0] for data_i in data])
                     latitude = np.array([data_i[1] for data_i in data])
                     sla = 0.001*np.array([data_i[2] for data_i in data])
-                    decimal_array = np.array([data_i[3] for data_i in data])
-                    delta_t = np.array(decimal_array, dtype=np.float64)
-
-                    [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latlons[i]["latitude"], latlons[i]["longitude"], latlons[i]["longitude"])
-                    [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude, latlons[i]["longitude"])
-
-                    delta_x = x - x0
-                    delta_y = y - y0
-
-                    yield delta_x, delta_y, delta_t, sla
-
+                    delta_t = np.array(np.array([data_i[3] for data_i in data]), dtype=np.float64)
+                    yield latitude, longitude, delta_t, sla
                     i = i + 1
                     if not cursor.nextset():
                         break

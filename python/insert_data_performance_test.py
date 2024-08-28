@@ -7,7 +7,7 @@ missions = ['j3', 's3a', 's3b', 's6a-lr']
 # missions = ['s6a-lr']
 # missions = ['j2g']
 
-atdb = AlongTrack(db_name='ocean2')
+atdb = AlongTrack()
 
 # atdb.drop_database()
 # atdb.drop_along_track_metadata_table()
