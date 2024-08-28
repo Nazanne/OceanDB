@@ -852,15 +852,15 @@ class AlongTrack(OceanDB):
 
         return x, y, sla, t
 
-    def projected_geographic_points_in_spatialtemporal_windows(self, latitudes, longitudes, date, distance=500000, time_window=timedelta(seconds=856710), should_basin_mask=1, missions=None):
+    def projected_geographic_points_in_spatialtemporal_windows(self, latitudes, longitudes, date, distance=500000, time_window=timedelta(seconds=856710), missions=None):
         i = 0
-        for latitude, longitude, delta_t, sla in self.geographic_points_in_spatialtemporal_windows(latitudes, longitudes, date, distance, time_window, should_basin_mask, missions):
+        for data in self.geographic_points_in_spatialtemporal_windows(latitudes, longitudes, date, distance, time_window, missions):
             [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitudes[i], longitudes[i], longitudes[i])
-            [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude, longitudes[i])
-            delta_x = x - x0
-            delta_y = y - y0
+            [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(data["latitude"], data["longitude"], longitudes[i])
+            data["delta_x"] = x - x0
+            data["delta_y"] = y - y0
             i = i + 1
-            yield delta_x, delta_y, delta_t, sla
+            yield data
 
     def geographic_points_in_spatialtemporal_windows(self, latitudes, longitudes, date, distance=500000, time_window=timedelta(seconds=856710), missions=None):
         tokenized_query = self.sql_query_with_name('geographic_points_in_spatialtemporal_window.sql')
@@ -882,12 +882,12 @@ class AlongTrack(OceanDB):
                 cursor.executemany(query, params, returning=True)
                 i = 0
                 while True:
-                    data = cursor.fetchall()
-                    longitude = np.array([data_i[0] for data_i in data])
-                    latitude = np.array([data_i[1] for data_i in data])
-                    sla = 0.001*np.array([data_i[2] for data_i in data])
-                    delta_t = np.array(np.array([data_i[3] for data_i in data]), dtype=np.float64)
-                    yield latitude, longitude, delta_t, sla
+                    rows = cursor.fetchall()
+                    data = {"longitude": np.array([data_i[0] for data_i in rows]),
+                            "latitude": np.array([data_i[1] for data_i in rows]),
+                            "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in rows]),
+                            "delta_t": np.array(np.array([data_i[3] for data_i in rows]), dtype=np.float64)}
+                    yield data
                     i = i + 1
                     if not cursor.nextset():
                         break
