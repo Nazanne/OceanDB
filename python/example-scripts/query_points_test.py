@@ -11,6 +11,8 @@ atdb = AlongTrack(db_name='ocean')
 # data = atdb.geographic_points_in_spatialtemporal_window(11, 150, 800000, '2002-05-15', '2002-05-25', should_basin_mask=0)
 missions = None #['s3b','s6a']
 
+data = atdb.geographic_nearest_neighbor(9, -89, datetime.datetime(year=2021, month=5, day=15, hour=3), missions=missions)
+
 data = atdb.geographic_points_in_spatialtemporal_window(9, -89, datetime.datetime(year=2021, month=5, day=15, hour=3), missions=missions)
 
 plt.figure()
