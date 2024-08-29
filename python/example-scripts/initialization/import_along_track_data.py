@@ -5,9 +5,9 @@ from OceanDB.AlongTrack import AlongTrack
 missions = ['tp', 'j1', 'j2', 'j3', 's3a', 's3b', 's6a-lr']
 missions = ['j3', 's3a', 's3b', 's6a-lr']
 # missions = ['s6a-lr']
-# missions = ['j2g']
+missions = ['j2g']
 
-atdb = AlongTrack()
+atdb = AlongTrack(db_name="ocean")
 
 # atdb.drop_database()
 # atdb.drop_along_track_metadata_table()

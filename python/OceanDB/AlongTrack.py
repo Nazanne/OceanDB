@@ -163,6 +163,7 @@ class AlongTrack(OceanDB):
                 while True:
                     data = cursor.fetchall()
                     basin_id_connection_dict[uid[i]] = data[0][0]
+                    basin_id_connection_dict[uid[i]].insert(0, uid[i])
                     i = i + 1
                     if not cursor.nextset():
                         break
@@ -191,6 +192,53 @@ class AlongTrack(OceanDB):
         self.truncate_table(self.along_track_table_name)
 
     def create_along_track_indices(self):
+        tokenized_query = self.sql_query_with_name('create_along_track_index_filename.sql')
+        query_create_filename_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
+
+        print(f"Building along_track filename index")
+        start = time.time()
+        with pg.connect(self.connect_string()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query_create_filename_index)
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
+
+        tokenized_query = self.sql_query_with_name('create_along_track_index_time.sql')
+        create_along_track_index_time = sql.SQL(tokenized_query).format(
+            table_name=sql.Identifier(self.along_track_table_name))
+
+        print(f"Building along_track time index")
+        start = time.time()
+        with pg.connect(self.connect_string()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(create_along_track_index_time)
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
+
+        tokenized_query = self.sql_query_with_name('create_along_track_index_basin.sql')
+        create_along_track_index_basin = sql.SQL(tokenized_query).format(
+            table_name=sql.Identifier(self.along_track_table_name))
+
+        print(f"Building along_track basin index")
+        start = time.time()
+        with pg.connect(self.connect_string()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(create_along_track_index_basin)
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
+
+        tokenized_query = self.sql_query_with_name('create_along_track_index_mission.sql')
+        create_along_track_index_mission = sql.SQL(tokenized_query).format(
+            table_name=sql.Identifier(self.along_track_table_name))
+
+        print(f"Building along_track mission index")
+        start = time.time()
+        with pg.connect(self.connect_string()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(create_along_track_index_mission)
+        end = time.time()
+        print(f"Finished. Total time: {end - start}")
+
         tokenized_query = self.sql_query_with_name('create_along_track_index_point.sql')
         query_create_point_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
 
@@ -224,29 +272,6 @@ class AlongTrack(OceanDB):
         #         cur.execute(query_create_date_index)
         # end = time.time()
         # print(f"Finished. Total time: {end - start}")
-
-        tokenized_query = self.sql_query_with_name('create_along_track_index_filename.sql')
-        query_create_filename_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
-
-        print(f"Building along_track filename index")
-        start = time.time()
-        with pg.connect(self.connect_string()) as conn:
-            with conn.cursor() as cur:
-                cur.execute(query_create_filename_index)
-        end = time.time()
-        print(f"Finished. Total time: {end - start}")
-
-        tokenized_query = self.sql_query_with_name('create_along_track_index_time.sql')
-        create_along_track_index_time = sql.SQL(tokenized_query).format(
-            table_name=sql.Identifier(self.along_track_table_name))
-
-        print(f"Building along_track time index")
-        start = time.time()
-        with pg.connect(self.connect_string()) as conn:
-            with conn.cursor() as cur:
-                cur.execute(create_along_track_index_time)
-        end = time.time()
-        print(f"Finished. Total time: {end - start}")
 
         tokenized_query = self.sql_query_with_name('create_along_track_index_point_date.sql')
         query_create_combined_point_date_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
@@ -300,6 +325,10 @@ class AlongTrack(OceanDB):
         drop_along_track_index_mission = sql.SQL(tokenized_query).format(
             table_name=sql.Identifier(self.along_track_table_name))
 
+        tokenized_query = self.sql_query_with_name('drop_along_track_index_basin.sql')
+        drop_along_track_index_basin = sql.SQL(tokenized_query).format(
+            table_name=sql.Identifier(self.along_track_table_name))
+
         tokenized_query = self.sql_query_with_name('drop_along_track_index_point_date.sql')
         query_drop_combined_point_date_index = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.along_track_table_name))
 
@@ -314,6 +343,7 @@ class AlongTrack(OceanDB):
                 cur.execute(query_drop_filename_index)
                 cur.execute(drop_along_track_index_time)
                 cur.execute(drop_along_track_index_mission)
+                cur.execute(drop_along_track_index_basin)
                 cur.execute(query_drop_combined_point_date_index)
                 cur.execute(query_drop_point_date_mission_index)
                 conn.commit()
@@ -798,7 +828,6 @@ class AlongTrack(OceanDB):
         connected_basin_id = self.basin_connection_map[basin_id]
         values = {"longitude": longitude,
                   "latitude": latitude,
-                  "basin_id": basin_id,
                   "connected_basin_ids": connected_basin_id}
 
         with pg.connect(self.connect_string()) as connection:
@@ -812,7 +841,7 @@ class AlongTrack(OceanDB):
 
         return data
 
-    def geographic_nearest_neighbor(self, latitudes, longitudes, date, time_window=timedelta(seconds=856710), missions=None):
+    def geographic_nearest_neighbors(self, latitudes, longitudes, date, time_window=timedelta(seconds=856710), missions=None):
         tokenized_query = self.sql_query_with_name('geographic_nearest_neighbor.sql')
 
         if missions is None:
@@ -824,7 +853,7 @@ class AlongTrack(OceanDB):
 
         basin_ids = self.basin_mask(latitudes, longitudes)
         connected_basin_ids = list( map(self.basin_connection_map.get, basin_ids) )
-        params = [{"latitude": latitudes, "longitude": longitudes, "basin_id": basin_ids, "connected_basin_ids": connected_basin_ids} for latitudes, longitudes, basin_ids, connected_basin_ids in zip(latitudes, longitudes, basin_ids, connected_basin_ids)]
+        params = [{"latitude": latitudes, "longitude": longitudes, "connected_basin_ids": connected_basin_ids} for latitudes, longitudes, connected_basin_ids in zip(latitudes, longitudes, connected_basin_ids)]
 
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
@@ -857,10 +886,14 @@ class AlongTrack(OceanDB):
                                                 missions=sql.SQL(',').join(missions))
 
         basin_id = self.basin_mask(latitude, longitude)
-        connected_basin_id = self.basin_connection_map[basin_id]
+        if basin_id == 0:
+            return None
+        if basin_id in self.basin_connection_map:
+            connected_basin_id = self.basin_connection_map[basin_id]
+        else:
+            connected_basin_id = []
         values = {"longitude": longitude,
                   "latitude": latitude,
-                  "basin_id": basin_id,
                   "connected_basin_ids": connected_basin_id,
                   "distance": distance}
 
@@ -945,7 +978,7 @@ class AlongTrack(OceanDB):
 
         basin_ids = self.basin_mask(latitudes, longitudes)
         connected_basin_ids = list( map(self.basin_connection_map.get, basin_ids) )
-        params = [{"latitude": latitudes, "longitude": longitudes, "basin_id": basin_ids, "connected_basin_ids": connected_basin_ids, "distance": distances} for latitudes, longitudes, basin_ids, connected_basin_ids, distances in zip(latitudes, longitudes, basin_ids, connected_basin_ids, distance)]
+        params = [{"latitude": latitudes, "longitude": longitudes, "connected_basin_ids": connected_basin_ids, "distance": distances} for latitudes, longitudes, connected_basin_ids, distances in zip(latitudes, longitudes, connected_basin_ids, distance)]
 
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
