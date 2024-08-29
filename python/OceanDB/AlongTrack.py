@@ -785,6 +785,68 @@ class AlongTrack(OceanDB):
     #
     ######################################################
 
+    def geographic_nearest_neighbor(self, latitude, longitude, date, time_window=timedelta(seconds=856710), missions=None):
+        if missions is None:
+            missions = self.missions
+
+        tokenized_query = self.sql_query_with_name('geographic_nearest_neighbor.sql')
+        query = sql.SQL(tokenized_query).format(central_date_time=date,
+                                                time_delta=time_window / 2,
+                                                missions=sql.SQL(',').join(missions))
+
+        basin_id = self.basin_mask(latitude, longitude)
+        connected_basin_id = self.basin_connection_map[basin_id]
+        values = {"longitude": longitude,
+                  "latitude": latitude,
+                  "basin_id": basin_id,
+                  "connected_basin_ids": connected_basin_id}
+
+        with pg.connect(self.connect_string()) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(query,values)
+                row = cursor.fetchall()
+                data = {"longitude": np.array([data_i[0] for data_i in row]),
+                        "latitude": np.array([data_i[1] for data_i in row]),
+                        "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in row]),
+                        "delta_t": np.array(np.array([data_i[3] for data_i in row]), dtype=np.float64)}
+
+        return data
+
+    def geographic_nearest_neighbor(self, latitudes, longitudes, date, time_window=timedelta(seconds=856710), missions=None):
+        tokenized_query = self.sql_query_with_name('geographic_nearest_neighbor.sql')
+
+        if missions is None:
+            missions = self.missions
+
+        query = sql.SQL(tokenized_query).format(central_date_time=date,
+                                                time_delta=time_window/2,
+                                                missions=sql.SQL(',').join(missions))
+
+        basin_ids = self.basin_mask(latitudes, longitudes)
+        connected_basin_ids = list( map(self.basin_connection_map.get, basin_ids) )
+        params = [{"latitude": latitudes, "longitude": longitudes, "basin_id": basin_ids, "connected_basin_ids": connected_basin_ids} for latitudes, longitudes, basin_ids, connected_basin_ids in zip(latitudes, longitudes, basin_ids, connected_basin_ids)]
+
+        with pg.connect(self.connect_string()) as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(query, params, returning=True)
+                i = 0
+                while True:
+                    rows = cursor.fetchall()
+                    if not rows:
+                        data = {"longitude": np.full(shape=1, fill_value=np.nan),
+                                "latitude": np.full(shape=1, fill_value=np.nan),
+                                "sla_filtered": np.full(shape=1, fill_value=np.nan),
+                                "delta_t": np.full(shape=1, fill_value=np.nan)}
+                    else:
+                        data = {"longitude": np.array([data_i[0] for data_i in rows]),
+                                "latitude": np.array([data_i[1] for data_i in rows]),
+                                "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in rows]),
+                                "delta_t": np.array(np.array([data_i[3] for data_i in rows]), dtype=np.float64)}
+                    yield data
+                    i = i + 1
+                    if not cursor.nextset():
+                        break
+
     def geographic_points_in_spatialtemporal_window(self, latitude, longitude, date, distance=500000, time_window=timedelta(seconds=856710), missions=None):
         if missions is None:
             missions = self.missions
@@ -806,10 +868,16 @@ class AlongTrack(OceanDB):
             with connection.cursor() as cursor:
                 cursor.execute(query,values)
                 row = cursor.fetchall()
-                data = {"longitude": np.array([data_i[0] for data_i in row]),
-                        "latitude": np.array([data_i[1] for data_i in row]),
-                        "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in row]),
-                        "delta_t": np.array(np.array([data_i[3] for data_i in row]), dtype=np.float64)}
+                if not row:
+                    data = {"longitude": np.full(shape=1, fill_value=np.nan),
+                            "latitude": np.full(shape=1, fill_value=np.nan),
+                            "sla_filtered": np.full(shape=1, fill_value=np.nan),
+                            "delta_t": np.full(shape=1, fill_value=np.nan)}
+                else:
+                    data = {"longitude": np.array([data_i[0] for data_i in row]),
+                            "latitude": np.array([data_i[1] for data_i in row]),
+                            "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in row]),
+                            "delta_t": np.array(np.array([data_i[3] for data_i in row]), dtype=np.float64)}
 
         return data
 
@@ -885,10 +953,16 @@ class AlongTrack(OceanDB):
                 i = 0
                 while True:
                     rows = cursor.fetchall()
-                    data = {"longitude": np.array([data_i[0] for data_i in rows]),
-                            "latitude": np.array([data_i[1] for data_i in rows]),
-                            "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in rows]),
-                            "delta_t": np.array(np.array([data_i[3] for data_i in rows]), dtype=np.float64)}
+                    if not rows:
+                        data = {"longitude": np.full(shape=1, fill_value=np.nan),
+                                "latitude": np.full(shape=1, fill_value=np.nan),
+                                "sla_filtered": np.full(shape=1, fill_value=np.nan),
+                                "delta_t": np.full(shape=1, fill_value=np.nan)}
+                    else:
+                        data = {"longitude": np.array([data_i[0] for data_i in rows]),
+                                "latitude": np.array([data_i[1] for data_i in rows]),
+                                "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in rows]),
+                                "delta_t": np.array(np.array([data_i[3] for data_i in rows]), dtype=np.float64)}
                     yield data
                     i = i + 1
                     if not cursor.nextset():
