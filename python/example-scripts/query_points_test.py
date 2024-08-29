@@ -9,15 +9,16 @@ atdb = AlongTrack(db_name='ocean')
 # data = atdb.geographic_points_in_spatialtemporal_window(11., -80, 800000, '1992-05-15', '1994-05-25', should_basin_mask=1)
 # data = atdb.geographic_points_in_spatialtemporal_window(11, -80, 800000, '2002-05-15', '2002-05-25', should_basin_mask=0)
 # data = atdb.geographic_points_in_spatialtemporal_window(11, 150, 800000, '2002-05-15', '2002-05-25', should_basin_mask=0)
+missions = None #['s3b','s6a']
 
-data = atdb.geographic_points_in_spatialtemporal_window(11, 150, datetime.datetime(2022,5,15))
+data = atdb.geographic_points_in_spatialtemporal_window(9, -89, datetime.datetime(year=2021, month=5, day=15, hour=3), missions=missions)
 
 plt.figure()
 plt.scatter(data["longitude"], data["latitude"], c=data["sla_filtered"])
 plt.show()
 
 
-[x, y, sla, t] = atdb.projected_points_in_spatialtemporal_window(11, 150, datetime.datetime(2022,5,15))
+[x, y, sla, t] = atdb.projected_points_in_spatialtemporal_window(9, -89, datetime.datetime(year=2021, month=5, day=15, hour=3))
 plt.figure()
 plt.scatter(x, y, c=sla)
 plt.show()
