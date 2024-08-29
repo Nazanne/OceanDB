@@ -1,7 +1,7 @@
 from OceanDB.AlongTrack import AlongTrack
 # import OceanDB
 
-atdb = AlongTrack()
+atdb = AlongTrack(db_name="ocean")
 
 # atdb.drop_database()
 

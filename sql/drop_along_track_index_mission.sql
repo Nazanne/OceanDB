@@ -1,1 +1,1 @@
-DROP INDEX IF EXISTS along_track_mission
+DROP INDEX IF EXISTS along_track_mission_idx

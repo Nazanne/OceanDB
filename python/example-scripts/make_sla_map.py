@@ -22,7 +22,7 @@ def gaussian_kernel_smoother(x2, data, kernel_width):
 
 atdb = AlongTrack()
 
-should_write_to_file = 1
+should_write_to_file = 0
 date = datetime.datetime(year=2021, month=5, day=15, hour=3)
 resolution = 1.0
 dpc = 1/resolution
@@ -44,14 +44,14 @@ lon_ocean = lon_world[ocean_indices]
 
 missions = None #['s3b','s6a']
 
-
+# 243s no indices
 print(f"Building nearest-neighbor map with resolution {resolution}...")
 sla_world_nn = np.empty_like(lon_world)
 sla_world_nn[:] = np.nan
 sla_ocean = sla_world_nn[ocean_indices]
 start = time.time()
 i = 0
-for data in atdb.geographic_nearest_neighbor(lat_ocean, lon_ocean, date, missions=missions):
+for data in atdb.geographic_nearest_neighbors(lat_ocean, lon_ocean, date, missions=missions):
     sla_ocean[i] = data["sla_filtered"][0]
     i = i + 1
 end = time.time()
@@ -60,6 +60,7 @@ sla_world_nn[ocean_indices] = sla_ocean
 sla_world_nn = sla_world_nn.reshape(lon_grid.shape)
 sla_map_nn = xr.DataArray(sla_world_nn, coords={'latitude': lat_dim, 'longitude': lon_dim},
                                   dims=["latitude", "longitude"])
+quit()
 
 print(f"Building gaussian kernel map with resolution {resolution}...")
 sla_world_gk = np.empty_like(lon_world)
