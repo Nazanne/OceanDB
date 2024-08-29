@@ -791,7 +791,6 @@ class AlongTrack(OceanDB):
 
         tokenized_query = self.sql_query_with_name('geographic_points_in_spatialtemporal_window.sql')
         query = sql.SQL(tokenized_query).format(central_date_time=date,
-                                                distance=distance,
                                                 time_delta=time_window / 2,
                                                 missions=sql.SQL(',').join(missions))
 
@@ -800,7 +799,8 @@ class AlongTrack(OceanDB):
         values = {"longitude": longitude,
                   "latitude": latitude,
                   "basin_id": basin_id,
-                  "connected_basin_ids": connected_basin_id}
+                  "connected_basin_ids": connected_basin_id,
+                  "distance": distance}
 
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
@@ -868,14 +868,16 @@ class AlongTrack(OceanDB):
         if missions is None:
             missions = self.missions
 
+        if not isinstance(distance, list) and not isinstance(distance,np.ndarray):
+            distance = [distance]*len(latitudes)
+
         query = sql.SQL(tokenized_query).format(central_date_time=date,
-                                                distance=distance,
                                                 time_delta=time_window/2,
                                                 missions=sql.SQL(',').join(missions))
 
         basin_ids = self.basin_mask(latitudes, longitudes)
         connected_basin_ids = list( map(self.basin_connection_map.get, basin_ids) )
-        params = [{"latitude": latitudes, "longitude": longitudes, "basin_id": basin_ids, "connected_basin_ids": connected_basin_ids} for latitudes, longitudes, basin_ids, connected_basin_ids in zip(latitudes, longitudes, basin_ids, connected_basin_ids)]
+        params = [{"latitude": latitudes, "longitude": longitudes, "basin_id": basin_ids, "connected_basin_ids": connected_basin_ids, "distance": distances} for latitudes, longitudes, basin_ids, connected_basin_ids, distances in zip(latitudes, longitudes, basin_ids, connected_basin_ids, distance)]
 
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
