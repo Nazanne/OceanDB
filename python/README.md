@@ -12,6 +12,20 @@ pip install "psycopg[binary,pool]"
 
 It is also useful to download [pgAdmin](https://www.pgadmin.org), which is a postgresql client.
 
+### Starting postgres from the terminal
+
+I moved the data directory to an external drive, and thus need to start postgres from the terminal and point to the data directory.
+
+```
+chmod -R 0700 data-directory
+```
+
+```
+./pg_ctl start -l logfile -D data-directory
+```
+
+
+
 ## Initialize the along-track database
 
 As of 2024-07-12, I am piecing together code snippets and building a class `AlongTrack.py` which will handling building, indexing, populating, and querying the database. The script `create_along_track_db.py` shows basic usage.

@@ -7,3 +7,6 @@ __pycache__/
 *.nc
 /python/OceanDB/__pycache__
 *.png
+.idea/Eddy_Upload_Scripts.iml
+python/OceanDB/__pycache__/__init__.cpython-312.pyc
+python/OceanDB/__pycache__/AlongTrack.cpython-312.pyc

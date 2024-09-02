@@ -44,6 +44,7 @@ lon_ocean = lon_world[ocean_indices]
 
 missions = None
 # missions = ['s3b','s6a']
+# missions = ['j3', 's3a', 's3b', 's6a']
 
 print(f"Building nearest-neighbor map with resolution {resolution}...")
 sla_world_nn = np.empty_like(lon_world)
