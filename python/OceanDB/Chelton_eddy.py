@@ -5,13 +5,12 @@ import glob
 import time
 import os
 import yaml
-from OceanDB_class import OceanDB
-from AlongTrack import AlongTrack
+from python.OceanDB.OceanDB_class import OceanDB
+from python.OceanDB.AlongTrack import AlongTrack
 
-
-class Eddy(OceanDB):
-    eddy_table_name: str = 'eddy'
-    eddy_metadata_table_name: str = 'eddy_metadata'
+class CheltonEddy(OceanDB):
+    eddy_table_name: str = 'chelton_eddy'
+    eddy_metadata_table_name: str = 'chelton_eddy_metadata'
     eddies_file_path: str
     eddy_variable_metadata: dict = dict()
     variable_scale_factor: dict = dict()
@@ -49,98 +48,27 @@ class Eddy(OceanDB):
                 'comment': "Magnitude of the height difference between the extremum of SSH within the eddy and the SSH around the effective contour defining the eddy edge",
                 'long_name': "Amplitude",
                 'units': "m",
-                'scale_factor': 0.0001,
+                'scale_factor': 0.001,
                 'add_offset': 0,
                 'dtype': 'uint16'},
-            {'var_name': 'cost_association',
-                'comment': "Cost value to associate one eddy with the next observation",
-                'long_name': "Cost association between two eddies",
-                'dtype': 'float32'},
-            {'var_name': 'effective_area',
-                'comment': "Area enclosed by the effective contour in m^2",
-                'long_name': "Effective area",
-                'units': "m^2",
-                'dtype': 'float32'},
-            {'var_name': 'effective_contour_height',
-                'comment': "SSH filtered height for effective contour",
-                'long_name': "Effective Contour Height",
-                'units': "m",
-                'dtype': 'float32'},
-            {'var_name': 'effective_contour_latitude',
-                'axis': "X",
-                'comment': "Latitudes of effective contour",
-                'long_name': "Effective Contour Latitudes",
-                'units': "degrees_east",
-                'scale_factor': 0.01,
-                'add_offset': 0},
-            {'var_name': 'effective_contour_longitude',
-                'axis': "X",
-                'comment': "Longitudes of the effective contour",
-                'long_name': "Effective Contour Longitudes",
-                'units': "degrees_east",
-                'scale_factor': 0.01,
-                'add_offset': 180.},
-            {'var_name': 'effective_contour_shape_error',
-                'comment': "Error criterion between the effective contour and its best fit circle",
-                'long_name': "Effective Contour Shape Error",
-                'units': "%",
-                'scale_factor': 0.5,
-                'add_offset': 0,
-                'dtype': 'uint8'},
-            {'var_name': 'effective_radius',
-                'comment': "Radius of the best fit circle corresponding to the effective contour",
-                'long_name': "Effective Radius",
-                'units': "m",
-                'scale_factor': 50.,
-                'add_offset': 0,
-                'dtype': 'uint16'},
-            {'var_name': 'inner_contour_height',
-                'comment': "SSH filtered height for the smallest detected contour",
-                'long_name': "Inner Contour Height",
-                'units': "m",
-                'dtype': 'float32'},
+            {'var_name': 'cyclonic_type',
+             'comment': "Cyclonic -1; Anti-cyclonic +1",
+             'long_name': "Rotating sense of the eddy",
+             'dtype': 'int8'},
             {'var_name': 'latitude',
                 'axis': "Y",
-                'comment': "Latitude center of the best fit circle",
+                'comment': "Latitude center of the fitted circle",
                 'long_name': "Eddy Center Latitude",
-                'standard_name': "latitude",
-                'units': "degrees_north",
-                'dtype': 'float32'},
-            {'var_name': 'latitude_max',
-                'axis': "Y",
-                'comment': "Latitude of the inner contour",
-                'long_name': "Latitude of the SSH maximum",
                 'standard_name': "latitude",
                 'units': "degrees_north",
                 'dtype': 'float32'},
             {'var_name': 'longitude',
                 'axis': "X",
-                'comment': "Longitude center of the best fit circle",
+                'comment': "Longitude center of the fitted circle",
                 'long_name': "Eddy Center Longitude",
                 'standard_name': "longitude",
                 'units': "degrees_east",
                 'dtype': 'float32'},
-            {'var_name': 'longitude_max',
-                'axis': "X",
-                'comment': "Longitude of the inner contour",
-                'long_name': "Longitude of the SSH maximum",
-                'standard_name': "longitude",
-                'units': "degrees_east",
-                'dtype': 'float32'},
-            {'var_name': 'num_contours',
-                'comment': "Number of contours selected for this eddy",
-                'long_name': "Number of contours",
-                'dtype': 'uint16'},
-            {'var_name': 'num_point_e',
-                'description': "Number of points for effective contour before resampling",
-                'long_name': "number of points for effective contour",
-                'units': "ordinal",
-                'dtype': 'uint16'},
-            {'var_name': 'num_point_s',
-                'description': "Number of points for speed contour before resampling",
-                'long_name': "number of points for speed contour",
-                'units': "ordinal",
-                'dtype': 'uint16'},
             {'var_name': 'observation_flag',
                 'comment': "Flag indicating if the value is interpolated between two observations or not (0: observed eddy, 1: interpolated eddy)",
                 'long_name': "Virtual Eddy Position",
@@ -149,11 +77,6 @@ class Eddy(OceanDB):
                 'comment': "Observation sequence number, days starting at the eddy first detection",
                 'long_name': "Eddy temporal index in a trajectory",
                 'dtype': 'uint16'},
-            {'var_name': 'speed_area',
-                'comment': "Area enclosed by the speed contour in m^2",
-                'long_name': "Speed area",
-                'units': "m^2",
-                'dtype': 'float32'},
             {'var_name': 'speed_average',
                 'comment': "Average speed of the contour defining the radius scale speed_radius",
                 'long_name': "Maximum circum-averaged Speed",
@@ -161,34 +84,6 @@ class Eddy(OceanDB):
                 'scale_factor': 0.0001,
                 'add_offset': 0,
                 'dtype': 'uint16'},
-            {'var_name': 'speed_contour_height',
-                'comment': "SSH filtered height for speed contour",
-                'long_name': "Speed Contour Height",
-                'units': "m",
-                'dtype': 'float32'},
-            {'var_name': 'speed_contour_latitude',
-                'axis': "X",
-                'comment': "Latitudes of speed contour",
-                'long_name': "Speed Contour Latitudes",
-                'units': "degrees_east",
-                'scale_factor': 0.01,
-                'add_offset': 0,
-                'dtype': 'int16'},
-            {'var_name': 'speed_contour_longitude',
-                'axis': "X",
-                'comment': "Longitudes of speed contour",
-                'long_name': "Speed Contour Longitudes",
-                'units': "degrees_east",
-                'scale_factor': 0.01,
-                'add_offset': 180.,
-                'dtype': 'int16'},
-            {'var_name': 'speed_contour_shape_error',
-                'comment': "Error criterion between the speed contour and its best fit circle",
-                'long_name': "Speed Contour Shape Error",
-                'units': "%",
-                'scale_factor': 0.5,
-                'add_offset': 0,
-                'dtype': 'uint8'},
             {'var_name': 'speed_radius',
                 'comment': "Radius of the best fit circle corresponding to the contour of maximum circum-average speed",
                 'long_name': "Speed Radius",
@@ -208,14 +103,7 @@ class Eddy(OceanDB):
             {'var_name': 'track',
                 'comment': "Trajectory identification number",
                 'long_name': "Trajectory number",
-                'dtype': 'uint32'},
-            {'var_name': 'uavg_profile',
-                'comment': "Speed averaged values from the effective contour inwards to the smallest contour, evenly spaced points",
-                'long_name': "Radial Speed Profile",
-                'units': "m/s",
-                'scale_factor': 0.0001,
-                'add_offset': 0,
-                'dtype': 'uint16'}]
+                'dtype': 'uint32'},]
 
     ######################################################
     #
@@ -223,8 +111,8 @@ class Eddy(OceanDB):
     #
     ######################################################
 
-    def create_eddy_table(self):
-        tokenized_query = self.sql_query_with_name('create_eddy_table.sql')
+    def create_chelton_eddy_table(self):
+        tokenized_query = self.sql_query_with_name('create_chelton_eddy_table.sql')
         query = sql.SQL(tokenized_query).format(table_name=sql.Identifier(self.eddy_table_name))
 
         with pg.connect(self.connect_string()) as conn:
@@ -233,15 +121,15 @@ class Eddy(OceanDB):
                 conn.commit()
         print(f"Table '{self.eddy_table_name} added to database (if it did not previously exist) '{self.db_name}'.")
 
-    def drop_eddy_table(self):
+    def drop_chelton_eddy_table(self):
         self.drop_table(self.eddy_table_name)
 
-    def truncate_eddy_table(self):
+    def truncate_chelton_eddy_table(self):
         self.truncate_table(self.eddy_table_name)
 
-    def create_eddy_indices(self):
-        query_create_point_index = sql.SQL(self.sql_query_with_name('create_eddy_index_point.sql')).format(table_name=sql.Identifier(self.eddy_table_name))
-        query_create_track_times_cyclonic_type_idx = sql.SQL(self.sql_query_with_name('create_eddy_index_track_cyclonic_type.sql')).format(table_name=sql.Identifier(self.eddy_table_name))
+    def create_chelton_eddy_indices(self):
+        query_create_point_index = sql.SQL(self.sql_query_with_name('create_chelton_eddy_index_point.sql')).format(table_name=sql.Identifier(self.eddy_table_name))
+        query_create_track_times_cyclonic_type_idx = sql.SQL(self.sql_query_with_name('create_chelton_eddy_index_track_cyclonic_type.sql')).format(table_name=sql.Identifier(self.eddy_table_name))
 
         with pg.connect(self.connect_string()) as conn:
             with conn.cursor() as cur:
@@ -249,7 +137,7 @@ class Eddy(OceanDB):
                 cur.execute(query_create_track_times_cyclonic_type_idx)
                 conn.commit()
 
-    def drop_eddy_indices(self):
+    def drop_chelton_eddy_indices(self):
         query_drop_point_index = sql.SQL(self.sql_query_with_name('drop_eddy_index_point.sql')).format(table_name=sql.Identifier(self.eddy_table_name))
 
         with pg.connect(self.connect_string()) as conn:
@@ -276,29 +164,12 @@ class Eddy(OceanDB):
             ds.set_auto_maskandscale(False)
             eddy_data = {
                 'amplitude': ds.variables['amplitude'][:],
-                'cost_association': ds.variables['cost_association'][:],
-                'effective_area': ds.variables['effective_area'][:],
-                'effective_contour_height': ds.variables['effective_contour_height'][:],
-                'effective_contour_latitude': ds.variables['effective_contour_latitude'][:],
-                'effective_contour_longitude': ds.variables['effective_contour_longitude'][:],
-                'effective_contour_shape_error': ds.variables['effective_contour_shape_error'][:],
-                'effective_radius': ds.variables['effective_radius'][:],
-                'inner_contour_height': ds.variables['inner_contour_height'][:],
+                'cyclonic_type': ds.variables['cyclonic_type'][:],
                 'latitude': ds.variables['latitude'][:],
-                'latitude_max': ds.variables['latitude_max'][:],
                 'longitude': ds.variables['longitude'][:],
-                'longitude_max': ds.variables['longitude_max'][:],
-                'num_contours': ds.variables['num_contours'][:],
-                'num_point_e': ds.variables['num_point_e'][:],
-                'num_point_s': ds.variables['num_point_s'][:],
                 'observation_flag': ds.variables['observation_flag'][:],
                 'observation_number': ds.variables['observation_number'][:],
-                'speed_area': ds.variables['speed_area'][:],
                 'speed_average': ds.variables['speed_average'][:],
-                'speed_contour_height': ds.variables['speed_contour_height'][:],
-                'speed_contour_latitude': ds.variables['speed_contour_latitude'][:],
-                'speed_contour_longitude': ds.variables['speed_contour_longitude'][:],
-                'speed_contour_shape_error': ds.variables['speed_contour_shape_error'][:],
                 'speed_radius': ds.variables['speed_radius'][:],
                 'date_time': time_data,
                 'track': ds.variables['track'][:],
@@ -310,33 +181,19 @@ class Eddy(OceanDB):
         except FileNotFoundError:
             print("File '{}' not found".format(file_path))
 
-    def import_data_tuple_to_postgresql(self, data, filename, cyclonic_type):
+    def import_data_tuple_to_postgresql(self, data, filename):
         copy_query = sql.SQL(
             """COPY {eddy_tbl_nme} ( 
                 amplitude, 
-                cost_association, 
-                effective_area, 
-                effective_contour_height, 
-                effective_contour_shape_error, 
-                effective_radius, 
-                inner_contour_height, 
+                cyclonic_type, 
                 latitude, 
-                latitude_max, 
                 longitude, 
-                longitude_max, 
-                num_contours, 
-                num_point_e, 
-                num_point_s, 
                 observation_flag, 
                 observation_number, 
-                speed_area, 
                 speed_average, 
-                speed_contour_height, 
-                speed_contour_shape_error, 
                 speed_radius, 
                 date_time, 
-                track, 
-                cyclonic_type) FROM STDIN""").format(eddy_tbl_nme=sql.Identifier(self.eddy_table_name))
+                track) FROM STDIN""").format(eddy_tbl_nme=sql.Identifier(self.eddy_table_name))
 
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
@@ -344,51 +201,29 @@ class Eddy(OceanDB):
                     for i in range(len(data['observation_number'])):
                         copy.write_row([
                             data['amplitude'][i],
-                            data['cost_association'][i],
-                            data['effective_area'][i],
-                            data['effective_contour_height'][i],
-                            # data['effective_contour_latitude'][i],
-                            # data['effective_contour_longitude'][i],
-                            data['effective_contour_shape_error'][i],
-                            data['effective_radius'][i],
-                            data['inner_contour_height'][i],
+                            data['cyclonic_type'][i],
                             data['latitude'][i],
-                            data['latitude_max'][i],
                             data['longitude'][i],
-                            data['longitude_max'][i],
-                            data['num_contours'][i],
-                            data['num_point_e'][i],
-                            data['num_point_s'][i],
                             data['observation_flag'][i],
                             data['observation_number'][i],
-                            data['speed_area'][i],
                             data['speed_average'][i],
-                            data['speed_contour_height'][i],
-                            # data['speed_contour_shape'][i]
-                            data['speed_contour_shape_error'][i],
                             data['speed_radius'][i],
                             data['date_time'][i],
                             data['track'][i],
-                            cyclonic_type,
                         ])
 
-    def insert_eddy_data_from_netcdf_with_tuples(self):
+    def insert_chelton_eddy_data_from_netcdf_with_tuples(self):
         start = time.time()
         directory = self.eddies_file_path
-
-        for file_path in glob.glob(directory + '/*.nc'):
-            filenames = [os.path.basename(x) for x in glob.glob(file_path)]
-            cyclonic_type = 1
-            print(filenames[0])
-            if filenames[0] == 'META3.2_DT_allsat_Anticyclonic_long_19930101_20220209.nc' or filenames[0] == 'META3.2_DT_allsat_Cyclonic_long_19930101_20220209.nc':
-                data = self.extract_data_tuple_from_netcdf(file_path, filenames[0])
-                if filenames[0] == 'META3.2_DT_allsat_Cyclonic_long_19930101_20220209.nc':
-                    cyclonic_type = -1
-                import_start = time.time()
-                self.import_data_tuple_to_postgresql(data, filenames[0], cyclonic_type)
-                del data
-                import_end = time.time()
-                print(f"{filenames[0]} import time: {import_end - import_start}")
+        for file_path in glob.glob(directory + '/Eddy Trajectory DT 2.0 Jan 1 1993 to Mar 7 2020.nc'):
+            filename = 'Eddy Trajectory DT 2.0 Jan 1 1993 to Mar 7 2020'
+            print(filename)
+            data = self.extract_data_tuple_from_netcdf(file_path, filename)
+            import_start = time.time()
+            self.import_data_tuple_to_postgresql(data, filename)
+            del data
+            import_end = time.time()
+            print(f"{filename} import time: {import_end - import_start}")
         end = time.time()
         print(f"Script end. Total time: {end - start}")
 
@@ -398,7 +233,7 @@ class Eddy(OceanDB):
     #
     ######################################################
 
-    def eddy_with_id(self, eddy_id):
+    def chelton_eddy_with_id(self, eddy_id):
         tokenized_query = self.sql_query_with_name("eddy_with_id.sql")
         values = {"track_cyclonic_type": eddy_id}
 
@@ -426,7 +261,7 @@ class Eddy(OceanDB):
 
         return data
 
-    def along_track_points_near_eddy(self, eddy_id):
+    def along_track_points_near_chelton_eddy(self, eddy_id):
         eddy_query = """SELECT MIN(date_time), MAX(date_time), array_agg(distinct connected_id) || array_agg(distinct basin.id)
                         FROM eddy 
                         LEFT JOIN basin ON ST_Intersects(basin.basin_geog, eddy.eddy_point)
@@ -457,7 +292,7 @@ class Eddy(OceanDB):
 
         return data
 
-    def along_track_points_near_eddy_as_xarray(self, eddy_id):
+    def along_track_points_near_chelton_eddy_as_xarray(self, eddy_id):
         data = self.along_track_points_near_eddy(eddy_id)
         header_array = ['along_file_name', 'track', 'cycle', 'latitude', 'longitude', 'sla_unfiltered', 'sla_filtered',
                         'time', 'dac', 'ocean_tide', 'internal_tide', 'lwe', 'mdt', 'tpa_correction']
@@ -465,7 +300,7 @@ class Eddy(OceanDB):
         [xrdata, encoding] = self.data_as_xarray(data, header_array, AlongTrack.along_track_variable_metadata())
         return xrdata, encoding
 
-    def eddy_speed_radii_json(self, eddy_id):
+    def chelton_eddy_speed_radii_json(self, eddy_id):
         sql.SQL(self.sql_query_with_name('create_eddy_index_point.sql')).format(
             table_name=sql.Identifier(self.eddy_table_name))
         geojson_query = sql.SQL('''SELECT ST_AsGeoJSON(CASE

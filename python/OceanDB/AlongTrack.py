@@ -11,7 +11,7 @@ from datetime import timedelta
 import os
 import yaml
 import numpy as np
-from OceanDB import OceanDB
+from python.OceanDB.OceanDB_class import OceanDB
 from functools import cached_property
 
 class AlongTrack(OceanDB):

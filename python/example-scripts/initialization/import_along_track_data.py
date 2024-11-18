@@ -1,12 +1,12 @@
-# import sys; sys.path.extend(['/Users/jearly/Documents/ProjectRepositories/OceanDB/python'])
+import sys; sys.path.extend(['/Users/briancurtis/PycharmProjects/OceanDB/python'])
 from OceanDB.AlongTrack import AlongTrack
 
 # list of missions to add to database
-missions = ['tp', 'j1', 'j2', 'j3', 's3a', 's3b', 's6a-lr']
-missions = ['j3', 's3a', 's3b', 's6a-lr']
+# missions = ['tp', 'j1', 'j2', 'j3', 's3a', 's3b', 's6a-lr']
+missions = ['al', 'alg', 'c2', 'c2n', 'e1g', 'e1', 'j2', 'j3', 's3a', 's3b', 's6a-lr']
 # missions = ['s6a-lr']
-missions = ['j2g']
-missions = ['al', 'alg', 'c2', 'c2n', 'e1g', 'e1', 'e2', 'en', 'enn', 'g2', 'h2a', 'h2b', 'j1g', 'j1', 'j1n', 'j2g', 'j2', 'j2n', 'j3', 'j3n', 's3a', 's3b', 's6a-lr', 'tp', 'tpn'] # full set
+# missions = ['j2g']
+# missions = ['al', 'alg', 'c2', 'c2n', 'e1g', 'e1', 'e2', 'en', 'enn', 'g2', 'h2a', 'h2b', 'j1g', 'j1', 'j1n', 'j2g', 'j2', 'j2n', 'j3', 'j3n', 's3a', 's3b', 's6a-lr', 'tp', 'tpn'] # full set
 
 atdb = AlongTrack(db_name="ocean")
 
@@ -26,6 +26,6 @@ atdb = AlongTrack(db_name="ocean")
 
 # atdb.truncate_along_track_table()
 # atdb.truncate_along_track_metadata_table()
-atdb.drop_along_track_indices()
+# atdb.drop_along_track_indices()
 atdb.insert_along_track_data_from_netcdf_with_tuples(missions)
-atdb.create_along_track_indices()
+# atdb.create_along_track_indices()
