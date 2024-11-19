@@ -1,4 +1,3 @@
-
 ## Installing PostgreSQL
 
 We need to install PostgreSQL with the PostGIS extension. On macOS, there is a [nice simple installer](https://postgresapp.com) which includes the necessary components. Open up the app, and then hit `initialize` and now the PostgreSQL server is running locally on our machine.
