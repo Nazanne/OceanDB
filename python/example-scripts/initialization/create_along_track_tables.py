@@ -1,4 +1,4 @@
-from OceanDB.AlongTrack import AlongTrack
+from python.OceanDB.AlongTrack import AlongTrack
 # import OceanDB
 
 atdb = AlongTrack(db_name="ocean")
@@ -6,8 +6,8 @@ atdb = AlongTrack(db_name="ocean")
 # atdb.drop_database()
 
 # Build Database
-atdb.create_database()
-
+# atdb.create_database()
+#
 atdb.create_along_track_table()
 atdb.create_along_track_metadata_table()
 

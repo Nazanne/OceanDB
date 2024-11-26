@@ -11,7 +11,7 @@ from datetime import timedelta
 import os
 import yaml
 import numpy as np
-from python.OceanDB.OceanDB_class import OceanDB
+from OceanDB.OceanDB import OceanDB
 from functools import cached_property
 
 class AlongTrack(OceanDB):
@@ -535,12 +535,13 @@ class AlongTrack(OceanDB):
                 #         pruned_file_paths.append(file_paths[i])
                 cursor.executemany(query, filenames, returning=True)
                 i=0
-                while True:
-                    if not cursor.fetchone()[0]:
-                        pruned_file_paths.append(file_paths[i])
-                    i=i+1
-                    if not cursor.nextset():
-                        break
+                if cursor.rowcount > 0:
+                    while True:
+                        if not cursor.fetchone()[0]:
+                            pruned_file_paths.append(file_paths[i])
+                        i=i+1
+                        if not cursor.nextset():
+                            break
 
         return pruned_file_paths
 
@@ -797,7 +798,8 @@ class AlongTrack(OceanDB):
         start = time.time()
         directory = self.nc_files_path
         # copied code from satmapkit_utilities/open_cmems_local to get list of filenamess.
-        file_paths = [fn for fn in glob.glob(os.path.join(directory,'**/*.nc'),recursive=True) if any('_'+m+'-l3' in fn for m in missions)]
+        file_paths = [fn for fn in glob.glob(os.path.join(directory,'**/*.nc'),recursive=True) if any('_'+m+'_phy_l3' in fn for m in missions)]
+        print(glob.glob(os.path.join(directory,'**/*.nc'),recursive=True))
         print(f"Found %d files." % len(file_paths))
         file_paths = self.remove_previously_imported_files(file_paths)
         print(f"Pruning files already imported. Will import %d files into the database." % len(file_paths))

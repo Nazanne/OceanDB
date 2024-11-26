@@ -1,4 +1,4 @@
-from python.OceanDB.Chelton_eddy import CheltonEddy
+from OceanDB.CheltonEddy import CheltonEddy
 
 chelton_eddy_db = CheltonEddy(db_name='ocean')
 

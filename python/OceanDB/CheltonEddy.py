@@ -5,8 +5,8 @@ import glob
 import time
 import os
 import yaml
-from python.OceanDB.OceanDB_class import OceanDB
-from python.OceanDB.AlongTrack import AlongTrack
+from OceanDB import OceanDB
+from OceanDB.AlongTrack import AlongTrack
 
 class CheltonEddy(OceanDB):
     eddy_table_name: str = 'chelton_eddy'
@@ -25,10 +25,10 @@ class CheltonEddy(OceanDB):
     def __init__(self, host="", username="", password="", port=5432, db_name='ocean', eddies_file_path=""):
         super().__init__(host=host, username=username, password=password, port=port, db_name=db_name)
         with open(os.path.join(os.path.dirname(__file__), '../config.yaml'), 'r') as param_file:
-            along_params = yaml.full_load(param_file)
-            if 'copernicus_marine' in along_params:
-                if 'eddies_file_path' in along_params['copernicus_marine']:
-                    self.eddies_file_path = along_params['copernicus_marine']['eddies_file_path']
+            chelton_params = yaml.full_load(param_file)
+            if 'copernicus_marine' in chelton_params:
+                if 'chelton_eddies_file_path' in chelton_params['copernicus_marine']:
+                    self.eddies_file_path = chelton_params['copernicus_marine']['eddies_file_path']
 
         # locally defined variable override the settings in the config file
         if eddies_file_path:

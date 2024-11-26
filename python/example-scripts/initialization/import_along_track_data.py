@@ -1,11 +1,11 @@
-# import sys; sys.path.extend(['/Users/jearly/Documents/ProjectRepositories/OceanDB/python'])
+# import sys; sys.path.extend(['/Users/briancurtis/PycharmProjects/OceanDB/python/'])
 from OceanDB.AlongTrack import AlongTrack
 
 # list of missions to add to database
-missions = ['tp', 'j1', 'j2', 'j3', 's3a', 's3b', 's6a-lr']
-missions = ['j3', 's3a', 's3b', 's6a-lr']
+# missions = ['tp', 'j1', 'j2', 'j3', 's3a', 's3b', 's6a-lr']
+# missions = ['j3', 's3a', 's3b', 's6a-lr']
 # missions = ['s6a-lr']
-missions = ['j2g']
+# missions = ['j2g']
 missions = ['al', 'alg', 'c2', 'c2n', 'e1g', 'e1', 'e2', 'en', 'enn', 'g2', 'h2a', 'h2b', 'j1g', 'j1', 'j1n', 'j2g', 'j2', 'j2n', 'j3', 'j3n', 's3a', 's3b', 's6a-lr', 'tp', 'tpn'] # full set
 # importing all missions takes 6 hours, not counting index building.
 # 1,790,015,440 along_track points

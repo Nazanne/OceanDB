@@ -5,7 +5,7 @@ import glob
 import time
 import os
 import yaml
-from OceanDB_class import OceanDB
+from OceanDB import OceanDB
 from AlongTrack import AlongTrack
 
 
