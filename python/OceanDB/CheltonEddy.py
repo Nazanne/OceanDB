@@ -5,13 +5,13 @@ import glob
 import time
 import os
 import yaml
-from OceanDB import OceanDB
-from OceanDB.AlongTrack import AlongTrack
+from OceanDB.OceanDB import OceanDB
+from AlongTrack import AlongTrack
 
 class CheltonEddy(OceanDB):
     eddy_table_name: str = 'chelton_eddy'
     eddy_metadata_table_name: str = 'chelton_eddy_metadata'
-    eddies_file_path: str
+    chelton_eddies_file_path: str = ''
     eddy_variable_metadata: dict = dict()
     variable_scale_factor: dict = dict()
     variable_add_offset: dict = dict()
@@ -22,17 +22,17 @@ class CheltonEddy(OceanDB):
     #
     ######################################################
 
-    def __init__(self, host="", username="", password="", port=5432, db_name='ocean', eddies_file_path=""):
+    def __init__(self, host="", username="", password="", port=5432, db_name='ocean', chelton_eddies_file_path=""):
         super().__init__(host=host, username=username, password=password, port=port, db_name=db_name)
         with open(os.path.join(os.path.dirname(__file__), '../config.yaml'), 'r') as param_file:
             chelton_params = yaml.full_load(param_file)
             if 'copernicus_marine' in chelton_params:
                 if 'chelton_eddies_file_path' in chelton_params['copernicus_marine']:
-                    self.eddies_file_path = chelton_params['copernicus_marine']['eddies_file_path']
+                    self.chelton_eddies_file_path = chelton_params['copernicus_marine']['chelton_eddies_file_path']
 
         # locally defined variable override the settings in the config file
-        if eddies_file_path:
-            self.eddies_file_path = eddies_file_path
+        if chelton_eddies_file_path:
+            self.chelton_eddies_file_path = chelton_eddies_file_path
 
         self.init_variable_metadata()
         for metadata in self.eddy_variable_metadata:
@@ -214,7 +214,7 @@ class CheltonEddy(OceanDB):
 
     def insert_chelton_eddy_data_from_netcdf_with_tuples(self):
         start = time.time()
-        directory = self.eddies_file_path
+        directory = self.chelton_eddies_file_path
         for file_path in glob.glob(directory + '/Eddy Trajectory DT 2.0 Jan 1 1993 to Mar 7 2020.nc'):
             filename = 'Eddy Trajectory DT 2.0 Jan 1 1993 to Mar 7 2020'
             print(filename)
