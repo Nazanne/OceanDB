@@ -138,7 +138,7 @@ class CheltonEddy(OceanDB):
                 conn.commit()
 
     def drop_chelton_eddy_indices(self):
-        query_drop_point_index = sql.SQL(self.sql_query_with_name('drop_eddy_index_point.sql')).format(table_name=sql.Identifier(self.eddy_table_name))
+        query_drop_point_index = sql.SQL(self.sql_query_with_name('drop_chelton_eddy_index_point.sql')).format(table_name=sql.Identifier(self.eddy_table_name))
 
         with pg.connect(self.connect_string()) as conn:
             with conn.cursor() as cur:
@@ -244,14 +244,14 @@ class CheltonEddy(OceanDB):
 
         return data
 
-    def eddy_with_id_as_xarray(self, eddy_id):
-        data = self.eddy_with_id(eddy_id)
-        header_array = ['track', 'cyclonic_type', 'time', 'latitude', 'longitude', 'observation_number', 'speed_radius', 'amplitude']
+    def chelton_eddy_with_id_as_xarray(self, eddy_id):
+        data = self.chelton_eddy_with_id(eddy_id)
+        header_array = ['track', 'cyclonic_type', 'date_time', 'latitude', 'longitude', 'observation_number', 'speed_radius', 'amplitude']
         [xrdata, encoding] = self.data_as_xarray(data, header_array, self.eddy_variable_metadata)
         return xrdata, encoding
 
-    def along_track_points_near_eddy_old(self, eddy_id):
-        tokenized_query = self.sql_query_with_name('along_near_eddy.sql').format(speed_radius_scale_factor=self.variable_scale_factor["speed_radius"])
+    def along_track_points_near_chelton_eddy_old(self, eddy_id):
+        tokenized_query = self.sql_query_with_name('along_near_chelton_eddy.sql').format(speed_radius_scale_factor=self.variable_scale_factor["speed_radius"])
         values = {"eddy_id": eddy_id}
 
         with pg.connect(self.connect_string()) as connection:
@@ -262,17 +262,20 @@ class CheltonEddy(OceanDB):
         return data
 
     def along_track_points_near_chelton_eddy(self, eddy_id):
-        eddy_query = """SELECT MIN(date_time), MAX(date_time), array_agg(distinct connected_id) || array_agg(distinct basin.id)
-                        FROM eddy 
-                        LEFT JOIN basin ON ST_Intersects(basin.basin_geog, eddy.eddy_point)
-                        LEFT JOIN basin_connection ON basin_connection.basin_id = basin.id
-                        WHERE eddy.track * eddy.cyclonic_type=%(eddy_id)s
-                        GROUP BY track, cyclonic_type;"""
+        eddy_query = """SELECT 
+                MIN(date_time), 
+                MAX(date_time), 
+                array_agg(distinct connected_id) || array_agg(distinct basin.id)
+            FROM chelton_eddy as ceddy 
+            LEFT JOIN basin ON ST_Intersects(basin.basin_geog, ceddy.chelton_eddy_point)
+            LEFT JOIN basin_connection ON basin_connection.basin_id = basin.id
+            WHERE ceddy.id = %(eddy_id)s
+            GROUP BY track, cyclonic_type;"""
         along_query = """SELECT atk.file_name, atk.track, atk.cycle, atk.latitude, atk.longitude, atk.sla_unfiltered, atk.sla_filtered, atk.date_time as time, atk.dac, atk.ocean_tide, atk.internal_tide, atk.lwe, atk.mdt, atk.tpa_correction
-                   FROM eddy
-                   INNER JOIN along_track atk ON atk.date_time BETWEEN eddy.date_time AND (eddy.date_time + interval '1 day')
-	               AND st_dwithin(atk.along_track_point, eddy.eddy_point, (eddy.speed_radius * {speed_radius_scale_factor} * 2.0)::double precision)
-                   WHERE eddy.track * eddy.cyclonic_type=%(eddy_id)s
+                   FROM chelton_eddy as ceddy 
+                   INNER JOIN along_track atk ON atk.date_time BETWEEN ceddy.date_time AND (ceddy.date_time + interval '1 day')
+	               AND st_dwithin(atk.along_track_point, ceddy.chelton_eddy_point, (ceddy.speed_radius * {speed_radius_scale_factor} * 2.0)::double precision)
+                   WHERE ceddy.id = %(eddy_id)s
                    AND atk.date_time BETWEEN '{min_date}'::timestamp AND '{max_date}'::timestamp
                    AND basin_id = ANY( ARRAY[{connected_basin_ids}] );"""
         values = {"eddy_id": eddy_id}
@@ -293,7 +296,7 @@ class CheltonEddy(OceanDB):
         return data
 
     def along_track_points_near_chelton_eddy_as_xarray(self, eddy_id):
-        data = self.along_track_points_near_eddy(eddy_id)
+        data = self.along_track_points_near_chelton_eddy(eddy_id)
         header_array = ['along_file_name', 'track', 'cycle', 'latitude', 'longitude', 'sla_unfiltered', 'sla_filtered',
                         'time', 'dac', 'ocean_tide', 'internal_tide', 'lwe', 'mdt', 'tpa_correction']
 
@@ -301,22 +304,22 @@ class CheltonEddy(OceanDB):
         return xrdata, encoding
 
     def chelton_eddy_speed_radii_json(self, eddy_id):
-        sql.SQL(self.sql_query_with_name('create_eddy_index_point.sql')).format(
+        sql.SQL(self.sql_query_with_name('create_chelton_eddy_index_point.sql')).format(
             table_name=sql.Identifier(self.eddy_table_name))
         geojson_query = sql.SQL('''SELECT ST_AsGeoJSON(CASE
             WHEN
-                abs(min(eddy.longitude) - max(eddy.longitude)) > 180
+                abs(min(ceddy.longitude) - max(ceddy.longitude)) > 180
                 THEN
-                ST_ShiftLongitude(ST_Collect(cast(ST_Buffer(eddy.eddy_point, eddy.speed_radius *{scale_factor}) as geometry)))
+                ST_ShiftLongitude(ST_Collect(cast(ST_Buffer(ceddy.chelton_eddy_point, ceddy.speed_radius *{scale_factor}) as geometry)))
             ELSE
-                ST_Collect(ST_Buffer(eddy.eddy_point, eddy.speed_radius *{scale_factor})::geometry)
+                ST_Collect(ST_Buffer(ceddy.chelton_eddy_point, ceddy.speed_radius *{scale_factor})::geometry)
             END, 6) AS speed_radius_buffer,
-            max(eddy.longitude)      as max_longitude,
-            min(eddy.longitude)      as min_longitude,
-            max(eddy.latitude)       as max_latitude,
-            min(eddy.latitude)       as min_latitude
-            FROM eddy
-            WHERE eddy.track * eddy.cyclonic_type = %(eddy_id)s
+            max(ceddy.longitude)      as max_longitude,
+            min(ceddy.longitude)      as min_longitude,
+            max(ceddy.latitude)       as max_latitude,
+            min(ceddy.latitude)       as min_latitude
+            FROM chelton_eddy as ceddy
+            WHERE ceddy.id = %(eddy_id)s
             GROUP BY track, cyclonic_type''').format(scale_factor=self.variable_scale_factor["speed_radius"])
 
         values = {"eddy_id": eddy_id}

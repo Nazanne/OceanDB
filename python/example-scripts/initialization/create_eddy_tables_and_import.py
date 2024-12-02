@@ -10,7 +10,7 @@ eddy_db = Eddy(db_name='ocean')
 # eddy_db.drop_eddy_indices()
 # eddy_db.drop_eddy_table()
 
-eddy_db.create_eddy_table()
+# eddy_db.create_eddy_table()
 # eddy_db.create_eddy_indices()
 
 # Database build complete. Now load data
@@ -19,4 +19,4 @@ eddy_db.create_eddy_table()
 # # Eddy NetCDFs to be imported will be called META3.2_DT_allsat_Anticyclonic_long_19930101_20220209 and META3.2_DT_allsat_Cyclonic_long_19930101_20220209
 eddy_db.insert_eddy_data_from_netcdf_with_tuples()
 
-eddy_db.create_eddy_indices()
+# eddy_db.create_eddy_indices()

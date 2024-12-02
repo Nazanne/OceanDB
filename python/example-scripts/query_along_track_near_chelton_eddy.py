@@ -1,37 +1,30 @@
-from Eddy import Eddy
-import matplotlib.pyplot as plt
 import time
-import numpy as np
-import psycopg as pg
-from sqlalchemy import create_engine
-from psycopg import sql
-import os.path
-import pandas as pd
-import xarray as xr
+import matplotlib.pyplot as plt
+from CheltonEddy import CheltonEddy
 
-eddy_id = -41
-eddy_id = 527413
-eddy_id = 700000
+chelton_eddy_id = -41
+chelton_eddy_id = 527413
+chelton_eddy_id = 700000
 
-if eddy_id > 0:
-    filename = f"eddy_+{abs(eddy_id)}.nc"
+if chelton_eddy_id > 0:
+    filename = f"chelton_eddy_+{abs(chelton_eddy_id)}.nc"
 else:
-    filename = f"eddy_-{abs(eddy_id)}.nc"
+    filename = f"chelton_eddy_-{abs(chelton_eddy_id)}.nc"
 
-eddy_db = Eddy(db_name='ocean')
+eddy_db = CheltonEddy(db_name='ocean')
+
+# start = time.time()
+# eddy_db.along_track_points_near_eddy_old(chelton_eddy_id)
+# end = time.time()
+# print(f"Finished. Total time: {end - start}")
 
 start = time.time()
-eddy_db.along_track_points_near_eddy_old(eddy_id)
+eddy_db.along_track_points_near_chelton_eddy(chelton_eddy_id)
 end = time.time()
-print(f"Finished along_track_points_near_eddy_old. Total time: {end - start}")
+print(f"Finished. Total time: {end - start}")
 
-start = time.time()
-eddy_db.along_track_points_near_eddy(eddy_id)
-end = time.time()
-print(f"Finished along_track_points_near_eddy. Total time: {end - start}")
-
-[eddy, eddy_encoding] = eddy_db.eddy_with_id_as_xarray(eddy_id)
-[along_track, along_encoding] = eddy_db.along_track_points_near_eddy_as_xarray(eddy_id)
+[eddy, eddy_encoding] = eddy_db.chelton_eddy_with_id_as_xarray(chelton_eddy_id)
+[along_track, along_encoding] = eddy_db.along_track_points_near_chelton_eddy_as_xarray(chelton_eddy_id)
 
 
 
