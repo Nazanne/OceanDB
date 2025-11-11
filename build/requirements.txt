@@ -7,3 +7,4 @@ pandas~=2.2.2
 copernicusmarine>=2.0.0
 xarray~=2024.6.0
 psycopg[binary]
+sqlalchemy>2.0

@@ -1,6 +1,6 @@
 SELECT
-    longitude,
     latitude,
+    longitude,
     sla_filtered,
     EXTRACT(EPOCH FROM (%(central_date_time)s - date_time)) AS time_difference_secs,
     along_track_point <-> ST_SetSRID(ST_MakePoint(%(longitude)s, %(latitude)s), 4326) AS distance

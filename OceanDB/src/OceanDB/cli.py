@@ -46,23 +46,28 @@ def validate():
 
 
 @cli.command
-def insert(root_dir = Path("data/copernicus/SEALEVEL_GLO_PHY_L3_MY_008_062/cmems_obs-sl_glo_phy-ssh_my_al-l3-duacs_PT1S_202411")):
+def insert():
     """
     Iterate over ALL
     """
-    # root_dir = Path("data/copernicus/SEALEVEL_GLO_PHY_L3_MY_008_062/cmems_obs-sl_glo_phy-ssh_my_al-l3-duacs_PT1S_202411")
+    al_root_dir = Path("data/copernicus/SEALEVEL_GLO_PHY_L3_MY_008_062/cmems_obs-sl_glo_phy-ssh_my_al-l3-duacs_PT1S_202411")
+    alg_root_dir = Path("data/copernicus/SEALEVEL_GLO_PHY_L3_MY_008_062/cmems_obs-sl_glo_phy-ssh_my_alg-l3-duacs_PT1S_202411")
+
 
     # Recursively iterate through all .nc files
     oceandb_etl = OceanDBETl()
-    nc_files = root_dir.rglob("*.nc")
+    al_nc_files = al_root_dir.rglob("*.nc")
+    alg_nc_files = alg_root_dir.rglob("*.nc")
+
+    nc_files = [*al_nc_files, *alg_nc_files]
 
     for file in nc_files:
-        try:
-            start = time.perf_counter()
-            oceandb_etl.ingest_along_track_file(file)
-            size_mb = file.stat().st_size / (1024 * 1024)
-            duration = time.perf_counter() - start
-            print(f"✅ {file.name} | {size_mb:.2f} MB | {duration:.2f}s")
+        # try:
+        start = time.perf_counter()
+        oceandb_etl.ingest_along_track_file(file)
+        size_mb = file.stat().st_size / (1024 * 1024)
+        duration = time.perf_counter() - start
+        print(f"✅ {file.name} | {size_mb:.2f} MB | {duration:.2f}s")
 
-        except Exception as ex:
-            logger.error(f"❌ {file.name}: {ex}")
+        # except Exception as ex:
+        #     logger.error(f"❌ {file.name}: {ex}")

@@ -22,16 +22,27 @@ class SLA_Geographic:
 	 EXTRACT(EPOCH FROM ({central_date_time} - date_time)) AS time_difference_secs
 
     """
-    longitudes: np.array
     latitudes: np.array
+    longitudes: np.array
     sla_filtered: float
     date: datetime
+    length: int
+
+    def __str__(self):
+        return f"""
+        latitudes: {self.latitudes[:10]}...
+        longitudes: {self.longitudes[:10]} ...
+        date: {self.t[:10]} ...
+        sla_filtered: {self.sla[:10]} ...
+        """
 
     def __init__(self, rows):
         self.latitudes = np.array([data_i[0] for data_i in rows])
         self.longitudes = np.array([data_i[1] for data_i in rows])
         self.sla = np.array([data_i[2] for data_i in rows])
         self.t = np.array([data_i[3] for data_i in rows])
+
+
 
         if not rows:
             data = {"longitude": np.full(shape=1, fill_value=np.nan),
@@ -177,6 +188,11 @@ class AlongTrack(OceanDB):
                                     time_window=timedelta(seconds=856710),
                                     missions=None
                                     ) -> dict:
+        """
+        Given a spatiotemporal point returns the THREE closest data points
+        distance: in meters
+        """
+
         if missions is None:
             missions = self.missions
 
@@ -184,6 +200,8 @@ class AlongTrack(OceanDB):
 
         basin_id = self.basin_mask(latitude, longitude)
         connected_basin_id = self.basin_connection_map[basin_id]
+
+
 
         params = {
             "longitude": longitude,
@@ -200,8 +218,8 @@ class AlongTrack(OceanDB):
                 row = cursor.fetchall()
 
                 data = {
-                    "longitude": np.array([data_i[0] for data_i in row]),
-                    "latitude": np.array([data_i[1] for data_i in row]),
+                    "latitude": np.array([data_i[0] for data_i in row]),
+                    "longitude": np.array([data_i[1] for data_i in row]),
                     "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in row]),
                     "delta_t": np.array(np.array([data_i[3] for data_i in row]), dtype=np.float64)}
         return data
@@ -242,16 +260,18 @@ class AlongTrack(OceanDB):
                 i = 0
                 while True:
                     rows = cursor.fetchall()
+
                     if not rows:
                         data = {"longitude": np.full(shape=1, fill_value=np.nan),
                                 "latitude": np.full(shape=1, fill_value=np.nan),
                                 "sla_filtered": np.full(shape=1, fill_value=np.nan),
                                 "delta_t": np.full(shape=1, fill_value=np.nan)}
                     else:
-                        data = {"longitude": np.array([data_i[0] for data_i in rows]),
-                                "latitude": np.array([data_i[1] for data_i in rows]),
-                                "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in rows]),
-                                "delta_t": np.array(np.array([data_i[3] for data_i in rows]), dtype=np.float64)}
+                        data = {
+                            "latitude": np.array([data_i[0] for data_i in rows]),
+                            "longitude": np.array([data_i[1] for data_i in rows]),
+                            "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in rows]),
+                            "delta_t": np.array(np.array([data_i[3] for data_i in rows]), dtype=np.float64)}
                     yield data
                     i = i + 1
                     if not cursor.nextset():
@@ -294,11 +314,8 @@ class AlongTrack(OceanDB):
             with connection.cursor() as cursor:
                 cursor.execute(query, params)
                 rows = cursor.fetchall()
-
                 sla_geographic = SLA_Geographic(rows)
                 return sla_geographic
-
-
 
     def geographic_points_in_spatialtemporal_windows(self,
                                                      latitudes: List[float],

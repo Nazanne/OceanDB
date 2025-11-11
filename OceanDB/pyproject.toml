@@ -9,7 +9,6 @@ description = "Ocean database ingestion and processing library"
 readme = "README.md"
 requires-python = ">=3.9"
 
-
 dependencies = [
     "netCDF4~=1.7.1.post1",
     "psycopg~=3.2.1",

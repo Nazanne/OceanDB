@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import netCDF4 as nc
 import pandas as pd
 import psycopg
@@ -14,7 +16,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from OceanDB.utils.postgres_upsert import upsert_ignore
 
-
+@dataclass
 class AlongTrackData:
     """Structured container for extracted along-track variables."""
     file_name: np.ndarray
@@ -35,6 +37,7 @@ class AlongTrackData:
     basin_id: np.ndarray
 
 
+@dataclass
 class AlongTrackMetaData:
     """Structured representation of NetCDF global metadata."""
     file_name: str

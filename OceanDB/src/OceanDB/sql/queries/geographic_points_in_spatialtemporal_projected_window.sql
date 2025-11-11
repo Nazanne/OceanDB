@@ -1,6 +1,6 @@
 SELECT
+	 latitude,
 	 longitude,
-     latitude,
 	 sla_filtered,
 	 date_time,
 	 ST_Distance(ST_MakePoint(%(longitude)s, %(latitude)s),along_track_point) as distance,
