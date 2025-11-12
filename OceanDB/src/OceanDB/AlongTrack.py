@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Generator
+import psycopg
 import psycopg as pg
 from psycopg import sql
 from datetime import timedelta, datetime
@@ -165,7 +166,7 @@ class AlongTrack(OceanDB):
                                     date: datetime,
                                     time_window=timedelta(seconds=856710),
                                     missions=None
-                                    ) -> dict:
+                                    ) -> SLA_Geographic:
         """
         Given a spatiotemporal point returns the THREE closest data points
         distance: in meters
@@ -194,21 +195,15 @@ class AlongTrack(OceanDB):
             with connection.cursor() as cursor:
                 cursor.execute(query,params)
                 row = cursor.fetchall()
-
-                data = {
-                    "latitude": np.array([data_i[0] for data_i in row]),
-                    "longitude": np.array([data_i[1] for data_i in row]),
-                    "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in row]),
-                    "delta_t": np.array(np.array([data_i[3] for data_i in row]), dtype=np.float64)}
-        return data
+                return SLA_Geographic(row, self.variable_scale_factor["sla_filtered"])
 
     def geographic_nearest_neighbors(self,
-                                     latitudes: List[float],
-                                     longitudes: List[float],
+                                     latitudes: npt.NDArray[np.floating],
+                                     longitudes: npt.NDArray[np.floating],
                                      date: datetime,
                                      time_window=timedelta(seconds=856710),
                                      missions=None
-                                     ):
+                                     ) -> Generator[SLA_Geographic, None, None]:
         """
         Given a spatiotemporal point returns the THREE closest data points
         distance: in meters
@@ -235,23 +230,10 @@ class AlongTrack(OceanDB):
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
                 cursor.executemany(query, params, returning=True)
-                i = 0
                 while True:
                     rows = cursor.fetchall()
-
-                    if not rows:
-                        data = {"longitude": np.full(shape=1, fill_value=np.nan),
-                                "latitude": np.full(shape=1, fill_value=np.nan),
-                                "sla_filtered": np.full(shape=1, fill_value=np.nan),
-                                "delta_t": np.full(shape=1, fill_value=np.nan)}
-                    else:
-                        data = {
-                            "latitude": np.array([data_i[0] for data_i in rows]),
-                            "longitude": np.array([data_i[1] for data_i in rows]),
-                            "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in rows]),
-                            "delta_t": np.array(np.array([data_i[3] for data_i in rows]), dtype=np.float64)}
+                    data = SLA_Geographic(rows, self.variable_scale_factor["sla_filtered"])
                     yield data
-                    i = i + 1
                     if not cursor.nextset():
                         break
 
@@ -261,7 +243,7 @@ class AlongTrack(OceanDB):
                                                     date: datetime,
                                                     distance=500000,
                                                     time_window=timedelta(seconds=856710),
-                                                    missions:List=None) -> SLA_Geographic | None:
+                                                    missions:List[str]|None=None) -> SLA_Geographic | None:
 
         if missions is None:
             missions = self.missions
@@ -292,16 +274,16 @@ class AlongTrack(OceanDB):
             with connection.cursor() as cursor:
                 cursor.execute(query, params)
                 rows = cursor.fetchall()
-                sla_geographic = SLA_Geographic(rows)
+                sla_geographic = SLA_Geographic(rows, self.variable_scale_factor["sla_filtered"])
                 return sla_geographic
 
     def geographic_points_in_spatialtemporal_windows(self,
-                                                     latitudes: List[float],
-                                                     longitudes: List[float],
+                                                     latitudes: npt.NDArray[np.floating],
+                                                     longitudes: npt.NDArray[np.floating],
                                                      dates: List[datetime],
-                                                     distance=500000,
+                                                     distances=500000,
                                                      time_window=timedelta(seconds=856710),
-                                                     missions=None) -> SLA_Geographic:
+                                                     missions=None) -> Generator[SLA_Geographic, None, None]:
         """
         Runs the geographic_points_in_spatialtemporal_window query for every point in the latitudes & the longitudes arrays
         """
@@ -310,8 +292,8 @@ class AlongTrack(OceanDB):
         if missions is None:
             missions = self.missions
 
-        if not isinstance(distance, list) and not isinstance(distance,np.ndarray):
-            distance = [distance]*len(latitudes)
+        if not isinstance(distances, list) and not isinstance(distances,np.ndarray):
+            distances = [distances]*len(latitudes)
 
 
         basin_ids = self.basin_mask(latitudes, longitudes)
@@ -327,14 +309,19 @@ class AlongTrack(OceanDB):
                 "connected_basin_ids": connected_basins,
                 "missions": [missions]
             }
-            for latitude, longitude, date, connected_basins in zip(latitudes, longitudes, dates, connected_basin_ids)
+            for latitude, longitude, date, connected_basins, distance in zip(latitudes, longitudes, dates, connected_basin_ids, distances)
         ]
 
 
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
-
-                    cursor.executemany(query, params, returning=True)
+                cursor.executemany(query, params, returning=True)
+                while True:
+                    rows = cursor.fetchall()
+                    data = SLA_Geographic(rows, self.variable_scale_factor["sla_filtered"])
+                    yield data
+                    if not cursor.nextset():
+                        break
 
                 # cursor.executemany(query, params, returning=True)
                 # i = 0

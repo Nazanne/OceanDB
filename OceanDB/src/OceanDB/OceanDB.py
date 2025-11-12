@@ -220,7 +220,7 @@ class OceanDB:
             return basin_mask
 
 
-    def basin_mask(self, latitude, longitude) -> int:
+    def basin_mask(self, latitude, longitude):
         """
         Get basin_id from lat & lng
         """
@@ -229,7 +229,7 @@ class OceanDB:
         j = np.floor((longitude % 360) / onesixth).astype(int)
         mask_data = self.basin_mask_data
         basin_mask = mask_data[i, j]
-        return int(basin_mask)
+        return basin_mask
 
     @cached_property
     def basin_connection_map(self) -> dict:
