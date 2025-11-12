@@ -1,4 +1,5 @@
 from datetime import datetime
+import numpy as np
 
 from OceanDB.AlongTrack import AlongTrack
 
@@ -9,33 +10,33 @@ along_track = AlongTrack()
 TEST single point spatiotemporal query
 """
 
-latitude = -69
-longitude = 28
-datetime(year=2013, month=3, day=14, hour=5)
+latitude =  -63.77912
+longitude = 291.794742
+date = datetime(year=2013, month=12, day=31, hour=23)
 
-#
-# sla_geographic = along_track.geographic_points_in_spatialtemporal_window(
-#     latitude=latitude,
-#     longitude=longitude,
-#     date= datetime(year=2013, month=3, day=14, hour=5),
-#     missions=['al']
-# )
-#
-# str(sla_geographic)
+
+sla_geographic = along_track.geographic_points_in_spatialtemporal_window(
+    latitude=latitude,
+    longitude=longitude,
+    date=date
+)
+
+print(sla_geographic)
 
 
 """
 TEST multipoint spatiotemporal query
 """
 
-latitudes = [-69, -60]
-longitudes = [ 28, 28]
-dates = [
-    datetime(year=2013, month=3, day=14, hour=5),
-    datetime(year=2013, month=3, day=14, hour=5)
-]
+latitudes = np.array([latitude])
+longitudes = np.array([longitude])
+dates = [ date ]
 
-along_track.geographic_points_in_spatialtemporal_windows(
+sla_geographic = along_track.geographic_points_in_spatialtemporal_windows(
     latitudes=latitudes,
-    longitudes=longitudes
+    longitudes=longitudes,
+    dates=dates
 )
+
+for data in sla_geographic:
+    print(data)
