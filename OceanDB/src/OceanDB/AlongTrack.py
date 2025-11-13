@@ -1,4 +1,4 @@
-from typing import List, Generator
+from typing import Generator, List, Callable
 import psycopg
 import psycopg as pg
 from psycopg import sql
@@ -7,10 +7,14 @@ import os
 import yaml
 import numpy as np
 import numpy.typing as npt
-from OceanDB.OceanDB import OceanDB
 from functools import cached_property
+from dataclasses import dataclass
+
+from OceanDB.OceanDB import OceanDB
+from OceanDB.utils.projections import spherical_transverse_mercator_to_latitude_longitude, latitude_longitude_to_spherical_transverse_mercator, latitude_longitude_bounds_for_transverse_mercator_box
 
 
+@dataclass
 class SLA_Geographic:
     """
     Make SLA data type explict
@@ -25,7 +29,7 @@ class SLA_Geographic:
     sla_filtered: npt.NDArray
     delta_t: npt.NDArray
 
-    def __str__(self):
+    def __repr__(self):
         return f"""
         latitude: {self.latitude[:10]}...
         longitude: {self.longitude[:10]} ...
@@ -33,17 +37,19 @@ class SLA_Geographic:
         sla_filtered: {self.sla_filtered[:10]} ...
         """
 
-    def __init__(self, rows, variable_scale_factor):
-        if not rows:
-            self.longitude = np.full(shape=1, fill_value=np.nan)
-            self.latitude = np.full(shape=1, fill_value=np.nan)
-            self.sla_filtered = np.full(shape=1, fill_value=np.nan)
-            self.delta_t = np.full(shape=1, fill_value=np.nan)
-        else:
-            self.latitude = np.array([data_i[0] for data_i in rows])
-            self.longitude = np.array([data_i[1] for data_i in rows])
-            self.sla_filtered = variable_scale_factor * np.array([data_i[2] for data_i in rows])
-            self.delta_t = np.array([data_i[3] for data_i in rows], dtype=np.float64)
+
+
+    @classmethod
+    def from_rows(cls,
+                 rows: list,
+                 variable_scale_factor
+                 ):
+        return cls(
+            latitude = np.array([data_i[0] for data_i in rows]),
+            longitude = np.array([data_i[1] for data_i in rows]),
+            sla_filtered = variable_scale_factor * np.array([data_i[2] for data_i in rows]),
+            delta_t = np.array([data_i[3] for data_i in rows], dtype=np.float64)
+        )
 
     def to_dict(self):
         return {
@@ -53,10 +59,30 @@ class SLA_Geographic:
             'delta_t': self.delta_t
         }
 
-
+@dataclass
 class SLA_Projected(SLA_Geographic):
     delta_x: npt.NDArray
     delta_y: npt.NDArray
+
+
+
+    def __init__(self,
+                 sla_geographic: SLA_Geographic,
+                 latitude: float,
+                 longitude: float,
+                 projection_function: Callable = latitude_longitude_to_spherical_transverse_mercator):
+        super().__init__(**sla_geographic.to_dict())
+        x0, y0 = projection_function(
+            lat=latitude,
+            lon=longitude,
+            lon0=longitude
+        )
+        x, y = projection_function(
+            lat=sla_geographic.latitude,
+            lon = sla_geographic.longitude,
+            lon0=longitude
+        )
+
 
 
 class AlongTrack(OceanDB):
@@ -160,13 +186,13 @@ class AlongTrack(OceanDB):
              'dtype': 'int16'}]
         return along_track_variable_metadata
 
-    def geographic_nearest_neighbor(self,
+    def geographic_nearest_neighbors_dt(self,
                                     latitude: float,
                                     longitude: float,
                                     date: datetime,
                                     time_window=timedelta(seconds=856710),
                                     missions=None
-                                    ) -> SLA_Geographic:
+                                    ) -> SLA_Geographic|None:
         """
         Given a spatiotemporal point returns the THREE closest data points
         distance: in meters
@@ -180,8 +206,6 @@ class AlongTrack(OceanDB):
         basin_id = self.basin_mask(latitude, longitude)
         connected_basin_id = self.basin_connection_map[basin_id]
 
-
-
         params = {
             "longitude": longitude,
             "latitude": latitude,
@@ -194,8 +218,10 @@ class AlongTrack(OceanDB):
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query,params)
-                row = cursor.fetchall()
-                return SLA_Geographic(row, self.variable_scale_factor["sla_filtered"])
+                rows = cursor.fetchall()
+                if not rows:
+                    return None
+                return SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
 
     def geographic_nearest_neighbors(self,
                                      latitudes: npt.NDArray[np.floating],
@@ -203,7 +229,7 @@ class AlongTrack(OceanDB):
                                      dates: List[datetime],
                                      time_window=timedelta(seconds=856710),
                                      missions=None
-                                     ) -> Generator[SLA_Geographic, None, None]:
+                                     ) -> Generator[SLA_Geographic|None, None, None]:
         """
         Given a spatiotemporal point returns the THREE closest data points
         distance: in meters
@@ -232,8 +258,11 @@ class AlongTrack(OceanDB):
                 cursor.executemany(query, params, returning=True)
                 while True:
                     rows = cursor.fetchall()
-                    data = SLA_Geographic(rows, self.variable_scale_factor["sla_filtered"])
-                    yield data
+                    if not rows:
+                        yield None
+                    else:
+                        data = SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
+                        yield data
                     if not cursor.nextset():
                         break
 
@@ -243,7 +272,8 @@ class AlongTrack(OceanDB):
                                                     date: datetime,
                                                     distance=500000,
                                                     time_window=timedelta(seconds=856710),
-                                                    missions:List[str]|None=None) -> SLA_Geographic | None:
+                                                    missions:List[str]|None=None
+                                                    ) -> SLA_Geographic | None:
 
         if missions is None:
             missions = self.missions
@@ -274,7 +304,9 @@ class AlongTrack(OceanDB):
             with connection.cursor() as cursor:
                 cursor.execute(query, params)
                 rows = cursor.fetchall()
-                sla_geographic = SLA_Geographic(rows, self.variable_scale_factor["sla_filtered"])
+                if not rows:
+                    return None
+                sla_geographic = SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
                 return sla_geographic
 
     def geographic_points_in_spatialtemporal_windows(self,
@@ -283,7 +315,8 @@ class AlongTrack(OceanDB):
                                                      dates: List[datetime],
                                                      distances=500000,
                                                      time_window=timedelta(seconds=856710),
-                                                     missions=None) -> Generator[SLA_Geographic, None, None]:
+                                                     missions=None
+                                                     ) -> Generator[SLA_Geographic|None, None, None]:
         """
         Runs the geographic_points_in_spatialtemporal_window query for every point in the latitudes and longitudes arrays and dates list.
 
@@ -322,8 +355,11 @@ class AlongTrack(OceanDB):
                 cursor.executemany(query, params, returning=True)
                 while True:
                     rows = cursor.fetchall()
-                    data = SLA_Geographic(rows, self.variable_scale_factor["sla_filtered"])
-                    yield data
+                    if not rows:
+                        yield None
+                    else:
+                        data = SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
+                        yield data
                     if not cursor.nextset():
                         break
 
@@ -347,16 +383,19 @@ class AlongTrack(OceanDB):
                 #         break
 
 
-    def projected_points_in_spatialtemporal_window(self,
+    def projected_points_in_dx_dy_dt(self,
                                                    latitude: float,
                                                    longitude: float,
                                                    date: datetime,
                                                    Lx: float = 500000.,
                                                    Ly: float = 500000.,
                                                    time_window=timedelta(seconds=856710),
-                                                   should_basin_mask: bool = True):
+                                                   should_basin_mask: bool = True
+                                                   ) -> SLA_Projected | None:
 
         """
+        Returns all points in a Geographic distance,
+        Removes all points outside of the Projected box
 
         Length 1 Array
 
@@ -389,116 +428,68 @@ class AlongTrack(OceanDB):
                 cursor.execute(tokenized_query, values)
                 data = cursor.fetchall()
 
-        lon = np.array([data_i[0] for data_i in data])
-        lat = np.array([data_i[1] for data_i in data])
-        sla = np.array([data_i[2] for data_i in data])
-        t = np.array([data_i[3] for data_i in data])
+        # lon = np.array([data_i[0] for data_i in data])
+        # lat = np.array([data_i[1] for data_i in data])
+        # sla = np.array([data_i[2] for data_i in data])
+        # t = np.array([data_i[3] for data_i in data])
+        #
+        # [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(lat, lon, longitude)
+        # out_of_bounds = (x < x0 - Lx) | (x > x0 + Lx) | (y < y0 - Ly) | (y > y0 + Ly)
+        # x = x[~out_of_bounds]
+        # y = y[~out_of_bounds]
+        # sla = sla[~out_of_bounds]
+        # t = t[~out_of_bounds]
+        #
+        # x = x - x0
+        # y = y - y0
+        #
+        # return x, y, sla, t
 
-        [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(lat, lon, longitude)
-        out_of_bounds = (x < x0 - Lx) | (x > x0 + Lx) | (y < y0 - Ly) | (y > y0 + Ly)
-        x = x[~out_of_bounds]
-        y = y[~out_of_bounds]
-        sla = sla[~out_of_bounds]
-        t = t[~out_of_bounds]
+    def projected_points_in_r_dt(self,
+                                                               latitudes: List[float],
+                                                               longitudes: List[float],
+                                                               dates: List[datetime],
+                                                               distance=500000,
+                                                               time_window=timedelta(seconds=856710),
+                                                               missions=None
+                                                               ) -> Generator[SLA_Projected | None, None, None]:
+        """
+        Calls the geographic_points_in_spatialtemporal_windows() method
+        """
+        # i = 0
 
-        x = x - x0
-        y = y - y0
+        sla_geographic_data_points = self.geographic_points_in_spatialtemporal_windows(
+            latitudes=latitudes,
+            longitudes=longitudes,
+            dates = dates,
+            distances=distance,
+            time_window=time_window,
+            missions=missions
+        )
 
-        return x, y, sla, t
-
-    # def projected_geographic_points_in_spatialtemporal_windows(self,
-    #                                                            latitudes: List[float],
-    #                                                            longitudes: List[float],
-    #                                                            # date: datetime,
-    #                                                            dates: List[datetime],
-    #                                                            distance=500000,
-    #                                                            time_window=timedelta(seconds=856710),
-    #                                                            missions=None) -> SLA_Projected:
-    #     """
-    #     Calls the geographic_points_in_spatialtemporal_windows() method
-    #     """
-    #     # i = 0
-    #
-    #     self.geographic_points_in_spatialtemporal_windows(latitudes=latitudes, longitudes=longitudes, da)
-    #
-    #     for latitude, longitude, date in zip(latitudes, longitudes, dates):
-    #         [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude, longitude)
-    #         [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude,
-    #                                                                                 longitudes[i])
-    #         data["delta_x"] = x - x0
-    #         data["delta_y"] = y - y0
-    #         i = i + 1
-    #         yield data
-    #
-    #     for data in self.geographic_points_in_spatialtemporal_windows(latitudes, longitudes, dates, distance, time_window, missions):
-    #         [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitudes[i], longitudes[i], longitudes[i])
-    #         [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(data["latitude"], data["longitude"], longitudes[i])
-    #         data["delta_x"] = x - x0
-    #         data["delta_y"] = y - y0
-    #         i = i + 1
-    #         yield data
+        for sla_geographic in sla_geographic_data_points:
+            if not sla_geographic:
+                yield None
+            else:
+                sla_projected = SLA_Projected(sla_geographic)
+                yield sla_projected
 
 
-    @staticmethod
-    def latitude_longitude_bounds_for_transverse_mercator_box(
-            lat0: float,
-            lon0: float,
-            Lx: float,
-            Ly: float
-        ):
-        [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(lat0, lon0, lon0=lon0)
-        x = np.zeros(6)
-        y = np.zeros(6)
 
-        x[1] = x0 - Lx / 2
-        y[1] = y0 - Ly / 2
+        # for sla_geographic in sla_geographic_data_points:
+        #     [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude, longitude)
+        #     [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude,
+        #                                                                             longitudes[i])
+        #     data["delta_x"] = x - x0
+        #     data["delta_y"] = y - y0
+        #     i = i + 1
+        #     yield data
 
-        x[2] = x0 - Lx / 2
-        y[2] = y0 + Ly / 2
-
-        x[3] = x0
-        y[3] = y0 + Ly / 2
-
-        x[4] = x0
-        y[4] = y0 - Ly / 2
-
-        x[5] = x0 + Lx / 2
-        y[5] = y0 - Ly / 2
-
-        x[0] = x0 + Lx / 2
-        y[0] = y0 + Ly / 2
-
-        [lats, lons] = AlongTrack.spherical_transverse_mercator_to_latitude_longitude(x, y, lon0)
-        minLat = min(lats)
-        maxLat = max(lats)
-        minLon = min(lons)
-        maxLon = max(lons)
-
-        return x0, y0, minLat, minLon, maxLat, maxLon
-
-    @staticmethod
-    def latitude_longitude_to_spherical_transverse_mercator(
-            lat: float,
-            lon: float,
-            lon0: float):
-        k0 = 0.9996
-        WGS84a = 6378137.
-        R = k0 * WGS84a
-        phi = np.array(lat) * np.pi / 180
-        deltaLambda = (np.array(lon) - np.array(lon0)) * np.pi / 180
-        sinLambdaCosPhi = np.sin(deltaLambda) * np.cos(phi)
-        x = (R / 2) * np.log((1 + sinLambdaCosPhi) / (1 - sinLambdaCosPhi))
-        y = R * np.arctan(np.tan(phi) / np.cos(deltaLambda))
-        return x, y
-
-    @staticmethod
-    def spherical_transverse_mercator_to_latitude_longitude(
-            x: float,
-            y: float,
-            lon0: float):
-        k0 = 0.9996
-        WGS84a = 6378137
-        R = k0 * WGS84a
-        lon = (180 / np.pi) * np.arctan(np.sinh(x / R) / np.cos(y / R)) + lon0
-        lat = (180 / np.pi) * np.arcsin(np.sin(y / R) / np.cosh(x / R))
-        return lat, lon
+        # for latitude, longitude, date in self.geographic_points_in_spatialtemporal_windows():
+        #     [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude, longitude)
+        #     [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude,
+        #                                                                             longitudes[i])
+        #     data["delta_x"] = x - x0
+        #     data["delta_y"] = y - y0
+        #     i = i + 1
+        #     yield data
