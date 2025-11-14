@@ -1,9 +1,10 @@
-
+import numpy as np
+import numpy.typing as npt
 
 
 def latitude_longitude_bounds_for_transverse_mercator_box(
-        lat0: float,
-        lon0: float,
+        lat0: float|npt.NDArray[np.floating],
+        lon0: float|npt.NDArray[np.floating],
         Lx: float,
         Ly: float
     ):
@@ -45,9 +46,9 @@ def latitude_longitude_bounds_for_transverse_mercator_box(
 
 
 def latitude_longitude_to_spherical_transverse_mercator(
-        lat: float,
-        lon: float,
-        lon0: float
+        lat: float|npt.NDArray[np.floating],
+        lon: float|npt.NDArray[np.floating],
+        lon0: float|npt.NDArray[np.floating]
     ):
     """
     Accepts a latitude & longitude and returns a projected coordinate according to transverse mercator
@@ -67,9 +68,9 @@ def latitude_longitude_to_spherical_transverse_mercator(
 
 
 def spherical_transverse_mercator_to_latitude_longitude(
-        x: float,
-        y: float,
-        lon0: float):
+        x: float|npt.NDArray[np.floating],
+        y: float|npt.NDArray[np.floating],
+        lon0: float|npt.NDArray[np.floating]):
     """
 
     """

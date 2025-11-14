@@ -58,27 +58,84 @@ class SLA_Geographic:
 
 @dataclass
 class SLA_Projected(SLA_Geographic):
-    delta_x: npt.NDArray
-    delta_y: npt.NDArray
+    x: npt.NDArray[np.floating]
+    y: npt.NDArray[np.floating]
+    delta_x: npt.NDArray[np.floating]
+    delta_y: npt.NDArray[np.floating]
 
-
-
-    def __init__(self,
-                 sla_geographic: SLA_Geographic,
-                 latitude: float,
-                 longitude: float,
-                 projection_function: Callable = latitude_longitude_to_spherical_transverse_mercator):
-        super().__init__(**sla_geographic.to_dict())
-        x0, y0 = projection_function(
-            lat=latitude,
-            lon=longitude,
-            lon0=longitude
-        )
+    @classmethod
+    def from_sla_geographic(
+            cls,
+            sla_geographic: SLA_Geographic,
+            latitude: float,
+            longitude: float,
+            projection_function: Callable = latitude_longitude_to_spherical_transverse_mercator,
+            x0: float|None = None,
+            y0: float|None = None,
+            ):
+        """
+        Compute projected datapoints, using a geographic datapoint and projection information.
+        Either (x0,y0) or (latitude, longitude) must be specified.
+        """
+        if x0 is None or y0 is None:
+            x0, y0 = projection_function(
+                lat=latitude,
+                lon=longitude,
+                lon0=longitude
+                )
         x, y = projection_function(
             lat=sla_geographic.latitude,
             lon = sla_geographic.longitude,
             lon0=longitude
         )
+        return cls(
+                **sla_geographic.__dict__,
+                x = x,
+                y = y,
+                delta_x = x - x0,
+                delta_y = y - y0,
+                )
+    @classmethod
+    def from_sla_geographic_filter_dx_dy(
+            cls,
+            sla_geographic: SLA_Geographic,
+            dx: float,
+            dy: float,
+            projection_function: Callable = latitude_longitude_to_spherical_transverse_mercator,
+            latitude: float|None = None,
+            longitude: float|None = None,
+            x0: float|None = None,
+            y0: float|None = None,
+            ):
+        """
+        Compute projected datapoints, using a geographic datapoint and projection information,
+        and filter to within a box in projected range x in (x0-dx, x0+dx) and y in (y0-dy, y0+dy).
+        Either (x0,y0) or (latitude, longitude) must be specified.
+        """
+        if x0 is None or y0 is None:
+            x0, y0 = projection_function(
+                lat=latitude,
+                lon=longitude,
+                lon0=longitude
+            )
+        x, y = projection_function(
+            lat=sla_geographic.latitude,
+            lon = sla_geographic.longitude,
+            lon0=longitude
+        )
+
+        # filter out points that are out of bounds
+        out_of_bounds = (x < x0 - dx) | (x > x0 + dx) | (y < y0 - dy) | (y > y0 + dy)
+        x = x[~out_of_bounds]
+        y = y[~out_of_bounds]
+
+        return cls(
+                **{name: value[~out_of_bounds] for name,value in sla_geographic.__dict__.items()},
+                x = x,
+                y = y,
+                delta_x = x - x0,
+                delta_y = y - y0,
+                )
 
 
 
@@ -184,43 +241,6 @@ class AlongTrack(OceanDB):
         return along_track_variable_metadata
 
     def geographic_nearest_neighbors_dt(self,
-                                    latitude: float,
-                                    longitude: float,
-                                    date: datetime,
-                                    time_window=timedelta(seconds=856710),
-                                    missions=None
-                                    ) -> SLA_Geographic|None:
-        """
-        Given a spatiotemporal point returns the THREE closest data points
-        distance: in meters
-        """
-
-        if missions is None:
-            missions = self.missions
-
-        query = self.load_sql_file(self.nearest_neighbor_query)
-
-        basin_id = self.basin_mask(latitude, longitude)
-        connected_basin_id = self.basin_connection_map[basin_id]
-
-        params = {
-            "longitude": longitude,
-            "latitude": latitude,
-            "central_date_time": date,
-            "time_delta": str(time_window / 2),
-            "connected_basin_ids": connected_basin_id,
-            "missions": missions
-        }
-
-        with pg.connect(self.connect_string()) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(query,params)
-                rows = cursor.fetchall()
-                if not rows:
-                    return None
-                return SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
-
-    def geographic_nearest_neighbors(self,
                                      latitudes: npt.NDArray[np.floating],
                                      longitudes: npt.NDArray[np.floating],
                                      dates: List[datetime],
@@ -228,8 +248,7 @@ class AlongTrack(OceanDB):
                                      missions=None
                                      ) -> Generator[SLA_Geographic|None, None, None]:
         """
-        Given a spatiotemporal point returns the THREE closest data points
-        distance: in meters
+        Given an array of spatiotemporal points, returns the THREE closest data points to each
         """
 
         query = self.load_sql_file(self.nearest_neighbor_query)
@@ -263,57 +282,14 @@ class AlongTrack(OceanDB):
                     if not cursor.nextset():
                         break
 
-    def geographic_points_in_spatialtemporal_window(self,
-                                                    latitude: float,
-                                                    longitude: float,
-                                                    date: datetime,
-                                                    distance=500000,
-                                                    time_window=timedelta(seconds=856710),
-                                                    missions:List[str]|None=None
-                                                    ) -> SLA_Geographic | None:
-
-        if missions is None:
-            missions = self.missions
-
-        query = self.load_sql_file(self.geo_spatiotemporal_query)
-        basin_id = self.basin_mask(latitude, longitude)
-        if basin_id == 0:
-            return None
-
-        if basin_id in self.basin_connection_map:
-            connected_basin_id = self.basin_connection_map[basin_id]
-        else:
-            connected_basin_id = []
-
-        connected_basin_id.append(3)
-
-        params = {
-            "longitude": longitude,
-            "latitude": latitude,
-            "distance": distance,
-            "central_date_time": date,
-            "time_delta": time_window,
-            "connected_basin_ids": connected_basin_id,
-            "missions": [missions]
-        }
-
-        with pg.connect(self.connect_string()) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(query, params)
-                rows = cursor.fetchall()
-                if not rows:
-                    return None
-                sla_geographic = SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
-                return sla_geographic
-
-    def geographic_points_in_spatialtemporal_windows(self,
-                                                     latitudes: npt.NDArray[np.floating],
-                                                     longitudes: npt.NDArray[np.floating],
-                                                     dates: List[datetime],
-                                                     distances=500000,
-                                                     time_window=timedelta(seconds=856710),
-                                                     missions=None
-                                                     ) -> Generator[SLA_Geographic|None, None, None]:
+    def geographic_points_in_r_dt(self,
+                                  latitudes: npt.NDArray[np.floating],
+                                  longitudes: npt.NDArray[np.floating],
+                                  dates: List[datetime],
+                                  distances: List[float]|float=500000.0,
+                                  time_window=timedelta(seconds=856710),
+                                  missions=None
+                                  ) -> Generator[SLA_Geographic|None, None, None]:
         """
         Runs the geographic_points_in_spatialtemporal_window query for every point in the latitudes and longitudes arrays and dates list.
 
@@ -326,7 +302,7 @@ class AlongTrack(OceanDB):
         if missions is None:
             missions = self.missions
 
-        if not isinstance(distances, list) and not isinstance(distances,np.ndarray):
+        if not isinstance(distances, list):
             distances = [distances]*len(latitudes)
 
 
@@ -360,41 +336,45 @@ class AlongTrack(OceanDB):
                     if not cursor.nextset():
                         break
 
-                # cursor.executemany(query, params, returning=True)
-                # i = 0
-                # while True:
-                #     rows = cursor.fetchall()
-                #     if not rows:
-                #         data = {"longitude": np.full(shape=1, fill_value=np.nan),
-                #                 "latitude": np.full(shape=1, fill_value=np.nan),
-                #                 "sla_filtered": np.full(shape=1, fill_value=np.nan),
-                #                 "delta_t": np.full(shape=1, fill_value=np.nan)}
-                #     else:
-                #         data = {"longitude": np.array([data_i[0] for data_i in rows]),
-                #                 "latitude": np.array([data_i[1] for data_i in rows]),
-                #                 "sla_filtered": self.variable_scale_factor["sla_filtered"] * np.array([data_i[2] for data_i in rows]),
-                #                 "delta_t": np.array(np.array([data_i[3] for data_i in rows]), dtype=np.float64)}
-                #     yield data
-                #     i = i + 1
-                #     if not cursor.nextset():
-                #         break
-
-
-    def projected_points_in_dx_dy_dt(self,
-                                                   latitude: float,
-                                                   longitude: float,
-                                                   date: datetime,
-                                                   Lx: float = 500000.,
-                                                   Ly: float = 500000.,
-                                                   time_window=timedelta(seconds=856710),
-                                                   should_basin_mask: bool = True
-                                                   ) -> SLA_Projected | None:
-
+    def projected_points_in_r_dt(self,
+                                 latitudes: npt.NDArray[np.floating],
+                                 longitudes: npt.NDArray[np.floating],
+                                 dates: List[datetime],
+                                 distances: List[float]|float=500000.0,
+                                 time_window=timedelta(seconds=856710),
+                                 missions=None
+                                 ) -> Generator[SLA_Projected | None, None, None]:
         """
-        Returns all points in a Geographic distance,
-        Removes all points outside of the Projected box
+        Get projected points around a reference point in a geographic radius and time interval
+        """
 
-        Length 1 Array
+        sla_geographic_data_points = self.geographic_points_in_r_dt(
+            latitudes=latitudes,
+            longitudes=longitudes,
+            dates = dates,
+            distances=distances,
+            time_window=time_window,
+            missions=missions
+        )
+        for lat,lon,geo_points in zip(latitudes,longitudes,sla_geographic_data_points):
+            if geo_points is None:
+                yield None
+            else:
+                yield SLA_Projected.from_sla_geographic(geo_points, latitude=lat, longitude=lon)
+
+    def projected_points_in_dx_dy_dt(
+            self,
+            latitudes: npt.NDArray[np.floating],
+            longitudes: npt.NDArray[np.floating],
+            dates: List[datetime],
+            Lx: float = 500000.,
+            Ly: float = 500000.,
+            time_window=timedelta(seconds=856710),
+            missions: List[str]|None=None,
+            should_basin_mask: bool = True
+            ) -> Generator[SLA_Projected | None, None, None]:
+        """
+        Get projected points around a reference point in a box in projected coordinates, and time interval
 
         should_basin_mask: ->
         NO MASK -> if should_basin_mask = True, only return points in the basin or connected basin.
@@ -404,89 +384,51 @@ class AlongTrack(OceanDB):
         should_basin_mask = True -> Returns only data in connected basin
 
         """
+
+        if missions is None:
+            missions = self.missions
+
         if should_basin_mask:
-            tokenized_query = self.load_sql_file("queries/geographic_points_in_spatialtemporal_projected_window.sql")
+            query = self.load_sql_file("queries/geographic_points_in_spatialtemporal_projected_window.sql")
         else:
-            tokenized_query = self.load_sql_file("queries/geographic_points_in_spatialtemporal_projected_window_nomask.sql")
+            query = self.load_sql_file("queries/geographic_points_in_spatialtemporal_projected_window_nomask.sql")
 
-        [x0, y0, minLat, minLon, maxLat, maxLon] = AlongTrack.latitude_longitude_bounds_for_transverse_mercator_box(latitude, longitude, 2*Lx, 2*Ly)
+        [x0s, y0s, minLats, minLons, maxLats, maxLons] = latitude_longitude_bounds_for_transverse_mercator_box(latitudes, longitudes, 2*Lx, 2*Ly)
 
-        values = {"longitude": longitude,
-                  "latitude": latitude,
-                  "xmin": minLon,
-                  "ymin": minLat,
-                  "xmax": maxLon,
-                  "ymax": maxLat,
-                  "central_date_time": date,
-                  "time_delta": time_window / 2}
+        params = [
+            {
+                "longitude": longitude,
+                "latitude": latitude,
+                "xmin": xmin,
+                "ymin": ymin,
+                "xmax": xmax,
+                "ymax": ymax,
+                "central_date_time": date,
+                "time_delta": time_window,
+                "missions": [missions]
+            }
+            for latitude, longitude, date, xmin, ymin, xmax, ymax in zip(
+                latitudes,
+                longitudes,
+                dates,
+                minLats,
+                minLons,
+                maxLats,
+                maxLons
+            )
+        ]
 
         with pg.connect(self.connect_string()) as connection:
             with connection.cursor() as cursor:
-                cursor.execute(tokenized_query, values)
-                data = cursor.fetchall()
-
-        # lon = np.array([data_i[0] for data_i in data])
-        # lat = np.array([data_i[1] for data_i in data])
-        # sla = np.array([data_i[2] for data_i in data])
-        # t = np.array([data_i[3] for data_i in data])
-        #
-        # [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(lat, lon, longitude)
-        # out_of_bounds = (x < x0 - Lx) | (x > x0 + Lx) | (y < y0 - Ly) | (y > y0 + Ly)
-        # x = x[~out_of_bounds]
-        # y = y[~out_of_bounds]
-        # sla = sla[~out_of_bounds]
-        # t = t[~out_of_bounds]
-        #
-        # x = x - x0
-        # y = y - y0
-        #
-        # return x, y, sla, t
-
-    def projected_points_in_r_dt(self,
-                                                               latitudes: List[float],
-                                                               longitudes: List[float],
-                                                               dates: List[datetime],
-                                                               distance=500000,
-                                                               time_window=timedelta(seconds=856710),
-                                                               missions=None
-                                                               ) -> Generator[SLA_Projected | None, None, None]:
-        """
-        Calls the geographic_points_in_spatialtemporal_windows() method
-        """
-        # i = 0
-
-        sla_geographic_data_points = self.geographic_points_in_spatialtemporal_windows(
-            latitudes=latitudes,
-            longitudes=longitudes,
-            dates = dates,
-            distances=distance,
-            time_window=time_window,
-            missions=missions
-        )
-
-        for sla_geographic in sla_geographic_data_points:
-            if not sla_geographic:
-                yield None
-            else:
-                sla_projected = SLA_Projected(sla_geographic)
-                yield sla_projected
-
-
-
-        # for sla_geographic in sla_geographic_data_points:
-        #     [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude, longitude)
-        #     [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude,
-        #                                                                             longitudes[i])
-        #     data["delta_x"] = x - x0
-        #     data["delta_y"] = y - y0
-        #     i = i + 1
-        #     yield data
-
-        # for latitude, longitude, date in self.geographic_points_in_spatialtemporal_windows():
-        #     [x0, y0] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude, longitude)
-        #     [x, y] = AlongTrack.latitude_longitude_to_spherical_transverse_mercator(latitude, longitude,
-        #                                                                             longitudes[i])
-        #     data["delta_x"] = x - x0
-        #     data["delta_y"] = y - y0
-        #     i = i + 1
-        #     yield data
+                cursor.executemany(query, params, returning=True)
+                for x0,y0 in zip(x0s, y0s):
+                    rows = cursor.fetchall()
+                    if not rows:
+                        yield None
+                    else:
+                        geo_data = SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
+                        yield SLA_Projected.from_sla_geographic_filter_dx_dy(
+                                geo_data, Lx, Ly, x0=x0, y0=y0
+                    )
+                    if not cursor.nextset():
+                        break
