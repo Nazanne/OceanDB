@@ -4,42 +4,40 @@ OceanDB is a python package for managing oceanic satellite data intelligently.  
 Configuring the .env 
 Using the .env.example create an .env populated with 
 
+POSTGRES_HOST=postgres
+POSTGRES_USERNAME=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_PORT=5432
+POSTGRES_DATABASE=ocean
 
+ALONG_TRACK_DATA_DIRECTORY=/app/data/copernicus
+EDDY_DATA_DIRECTORY=/app/data/eddies
 
-1. **Running Postgres**
+COPERNICUS_PASSWORD=copernicus_marine_service_password_placeholder
+COPERNICUS_USERNAME=copernicus_marine_service_username
+
+## Installation Instructions
+1. **Instalalling**
+   With your python environment activated
    ```bash
-   make run_postgres // runs postgres postgis in docker compose
+   pip install OceanDB 
+   pip install -e OceanDB // editable install for development
    ```
-   
-2. **Build OceanDB Python Image**
-   ```bash
-   make build_image
-   ```
-## Configuring Database Connection
-2. **Edit config.yaml** 
 
-   Copy config.example.yaml to config.yaml, and modify postgres connection values if using an external postgres instance. (If using local docker postgres instance, the default credentials will work)
-
-## Deploying & Initializing OceanDB
-To Initialize the database run the following commands
-1. **Running Container**
-   ```bash
-   make shell // Open shell in docker container with Oceandb package installed 
-   ```
-   Subsequent commands will be run from this shell
-2. **Initializing the Database**
+## OceanDB Initialization Instructions
+The OceanDB package provides a CLI for 
+1. **Initializing the Database**
    ```bash
    oceandb init // Creates the database tables 
    ```
 
-3. **Ingesting Data**
-
+TODO -> this is in progress 
+1. **Ingesting Data**
    Downloads data from Copernicus Marine Service over given date range & ingests into postgres.  Will take a long time.  
     ```bash
-   oceandb ingest --start-date 2021-02-01 --end-date 2024-03-01 --missions all // Ingest all date between start-date & end-date
+   oceandb ingest --start-date 2021-02-01 --end-date 2024-03-01 --missions all // Ingest all date between start-date & end-date  
     ```
-4. **Querying SLA Data** 
-
+2. **Querying SLA Data**
    To query the sea level anomaly for a given satellite mission, time range & radius around a given point
    ```python
    from datetime import datetime
@@ -57,9 +55,17 @@ To Initialize the database run the following commands
     missions = ['al']
    )
    ```
+
+## Docker Instructions
+
+1. **Running Postgres**
+   If you want to spin up a postgres development container with docker-compose
+   ```bash
+   make run_postgres // runs postgres postgis in docker compose
+   ```
    
-
-
-WHAT IS THIS?
-In [6]: quit
-error ignored in rollback on <psycopg.Connection [BAD] at 0xffffaef09d50>: terminating connection due to administrator command
+2. **Build OceanDB Python Image**
+   If building a development image 
+   ```bash
+   make build_image
+   ```
