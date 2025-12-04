@@ -273,14 +273,13 @@ class AlongTrack(OceanDB):
                 cursor.executemany(query, params, returning=True)
                 while True:
                     rows = cursor.fetchall()
-                    return rows
-                    # if not rows:
-                    #     yield None
-                    # else:
-                    #     data = SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
-                    #     yield data
-                    # if not cursor.nextset():
-                    #     break
+                    if not rows:
+                        yield None
+                    else:
+                        data = SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
+                        yield data
+                    if not cursor.nextset():
+                        break
 
     def geographic_points_in_r_dt(self,
                                   latitudes: npt.NDArray[np.floating],
