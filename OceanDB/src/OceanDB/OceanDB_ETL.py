@@ -125,8 +125,8 @@ class OceanDBETl(OceanDB):
     missions = ['al', 'alg', 'c2', 'c2n', 'e1g', 'e1', 'e2', 'en', 'enn', 'g2', 'h2a', 'h2b', 'j1g', 'j1', 'j1n', 'j2g',
                 'j2', 'j2n', 'j3', 'j3n', 's3a', 's3b', 's6a', 'tp', 'tpn']
 
-    def __init__(self, host="", username="", password="", port=5432, db_name='ocean', config_path='/app/config.yaml'):
-        super().__init__(host=host, username=username, password=password, port=port, db_name=db_name)
+    def __init__(self):
+        super().__init__()
 
     @staticmethod
     def along_track_variable_metadata():
