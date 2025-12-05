@@ -37,12 +37,16 @@ With Copernicus Marine Service Along Track downloaded to your computer. ensure t
 the .env file.  ALONG_TRACK_DATA_DIRECTORY should be the file path to the directory at which the SEALEVEL_GLO existis.  so ALONG_TRACK_DATA_DIRECTORY=/path/../../copernicus   
 
 
+
 ![Screenshot 2025-12-05 at 11.19.07 AM.png](docs/Screenshot%202025-12-05%20at%2011.19.07%E2%80%AFAM.png)
+
+By default if no arguments are provided this CLI command will iterate over all of the data
 
    ```bash
     oceandb ingest // Ingest all missions across all date ranges
+    oceandb ingest -m al  // Ingest all 'al' mission data
     oceandb ingest -m j1 -m j3 // Multiple missions 
-    oceandb ingest --start-date 2021-02-01 --end-date 2024-03-01 -m all // Ingest all data between start-date & end-date  
+    oceandb ingest -m j1 --start-date 2021-02-01 --end-date 2024-03-01  // Ingest all data between start-date & end-date  
   ```
 
  
