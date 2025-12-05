@@ -25,20 +25,15 @@ class OceanDB:
     """
     def __init__(
         self,
-        host: Optional[str] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        port: Optional[int] = None,
-        db_name: Optional[str] = None,
         ):
 
         self.config = Config()
         self.connection_string = self.config.connect_string()
-        self.host = host or self.config.POSTGRES_HOST
-        self.username = username or self.config.POSTGRES_USERNAME
-        self.password = password or self.config.POSTGRES_PASSWORD
-        self.port = port or self.config.POSTGRES_PORT
-        self.db_name = db_name or self.config.POSTGRES_DATABASE
+        self.host = self.config.POSTGRES_HOST
+        self.username = self.config.POSTGRES_USERNAME
+        self.password = self.config.POSTGRES_PASSWORD
+        self.port = self.config.POSTGRES_PORT
+        self.db_name = self.config.POSTGRES_DATABASE
 
         self.sql_pkg = "OceanDB.sql"
         self.data_pkg = "OceanDB.data"
@@ -119,12 +114,12 @@ class OceanDB:
 
     def get_engine(self, echo: bool = False):
         """Return a SQLAlchemy engine connected to the OceanDB Postgres database."""
-        host = os.getenv("DB_HOST", "postgres")
-        port = os.getenv("DB_PORT", "5432")
-        user = os.getenv("DB_USER", "postgres")
-        password = os.getenv("DB_PASSWORD", "postgres")
-        db = os.getenv("DB_NAME", "ocean")
 
+        host = self.config.POSTGRES_HOST
+        port = self.config.POSTGRES_PORT
+        user = self.config.POSTGRES_USERNAME
+        password = self.config.POSTGRES_PASSWORD
+        db = self.config.POSTGRES_DATABASE
         url = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db}"
         engine = create_engine(url, echo=echo)
         return engine

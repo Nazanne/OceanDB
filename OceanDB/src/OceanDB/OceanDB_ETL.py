@@ -125,8 +125,8 @@ class OceanDBETl(OceanDB):
     missions = ['al', 'alg', 'c2', 'c2n', 'e1g', 'e1', 'e2', 'en', 'enn', 'g2', 'h2a', 'h2b', 'j1g', 'j1', 'j1n', 'j2g',
                 'j2', 'j2n', 'j3', 'j3n', 's3a', 's3b', 's6a', 'tp', 'tpn']
 
-    def __init__(self, host="", username="", password="", port=5432, db_name='ocean', config_path='/app/config.yaml'):
-        super().__init__(host=host, username=username, password=password, port=port, db_name=db_name)
+    def __init__(self):
+        super().__init__()
 
     @staticmethod
     def along_track_variable_metadata():
@@ -418,20 +418,14 @@ class OceanDBETl(OceanDB):
 
     def ingest_along_track_file(self, file: Path):
         dataset: nc.Dataset = self.load_netcdf(file)
-        # print(dataset)
-        # along_track_data: AlongTrackData = self.extract_data_from_netcdf(ds=dataset, file=file)
+        along_track_data: AlongTrackData = self.extract_data_from_netcdf(ds=dataset, file=file)
         along_track_metadata: AlongTrackMetaData = self.extract_dataset_metadata(
              ds=dataset,
              file=file
         )
-        # for k, v in along_track_metadata.to_dict():
-        #     print(f"k: {k} v: {v}")
-        #
-        # print(along_track_metadata.to_dict())
-
-        # self.import_along_track_data_to_postgresql(
-        #      along_track_data=along_track_data
-        # )
+        self.import_along_track_data_to_postgresql(
+             along_track_data=along_track_data
+        )
         self.import_metadata_to_psql(
             metadata=along_track_metadata
         )
