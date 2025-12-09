@@ -155,8 +155,8 @@ class AlongTrack(OceanDB):
     projected_spatio_temporal_query_no_mask = 'queries/geographic_points_in_spatialtemporal_window.sql'
 
 
-    def __init__(self, host="", username="", password="", port=5432, db_name='ocean', nc_files_path=""):
-        super().__init__(host=host, username=username, password=password, port=port, db_name=db_name)
+    def __init__(self):
+        super().__init__()
         aList = AlongTrack.along_track_variable_metadata()
         for metadata in aList:
             if 'scale_factor' in metadata:
