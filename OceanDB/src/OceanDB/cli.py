@@ -1,5 +1,4 @@
 from datetime import datetime
-
 import click
 from pathlib import Path
 from OceanDB.OceanDB_ETL import OceanDBETl, AlongTrackData, AlongTrackMetaData
@@ -111,7 +110,7 @@ def get_netcdf4_files(
     missions: list,
     start_date: datetime = None,
     end_date: datetime = None
-):
+    ) -> list[Path]:
     """
     Generate a list of NetCDF along-track files based on missions and optional date filtering.
     If start_date and end_date are both None → return ALL files for those missions.
@@ -255,10 +254,20 @@ def ingest(missions=None, start_date=None, end_date=None):
     if not click.confirm(f"Ingesting {len(nc_files)} files This may take many hours. Continue?"):
         return
 
+    # Query the ingested metadata so that we can skip processing files that have already been processed
+    metadata_filenames = oceandb_etl.query_metadata()
+
     for file in nc_files:
-        print(f"Processing {file.name}")
+        file_name = file.name
+        if file_name in metadata_filenames:
+            continue
+
+        print(f"Processing {file_name}")
         start = time.perf_counter()
-        oceandb_etl.ingest_along_track_file(file)
+
+        along_track_data, along_track_metadata = oceandb_etl.extract_along_track_file(file=file )
+        oceandb_etl.ingest_along_track_file( along_track_data=along_track_data, along_track_metadata=along_track_metadata)
+
         size_mb = file.stat().st_size / (1024 * 1024)
         duration = time.perf_counter() - start
         print(f"✅ {file.name} | {size_mb:.2f} MB | {duration:.2f} seconds")

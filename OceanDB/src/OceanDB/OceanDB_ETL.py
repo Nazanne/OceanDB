@@ -36,7 +36,7 @@ class AlongTrackData:
     tpa_correction: np.ndarray
     basin_id: np.ndarray
 
-
+# filepath = "data/copernicus/SEALEVEL_GLO_PHY_L3_MY_008_062/cmems_obs-sl_glo_phy-ssh_my_al-l3-duacs_PT1S_202411/2013/03/dt_global_al_phy_l3_1hz_20130331_20240205.nc"
 @dataclass
 class AlongTrackMetaData:
     """Structured representation of NetCDF global metadata."""
@@ -75,12 +75,18 @@ class AlongTrackMetaData:
     def from_netcdf(cls, ds: nc.Dataset, file_name: str) -> "AlongTrackMetaData":
         """Create AlongTrackMetaData from a NetCDF4 dataset."""
 
+        if not isinstance(ds, nc.Dataset):
+            raise TypeError("AlongTrackMetaData requires a NetCDF Dataset")
+
         def get(attr: str):
             return getattr(ds, attr, None)
         # print("from netcdf")
         # print(getattr(ds, "Conventions", None))
         # print(ds)
 
+        conventions = getattr(ds, 'Conventions', None)
+
+        print(f"CONVENTIOSNS {conventions}")
         return cls(
             file_name=file_name,
             conventions=get("Conventions"),
@@ -109,6 +115,7 @@ class AlongTrackMetaData:
             summary=get("summary"),
             title=get("title"),
         )
+
 
 
 
@@ -400,6 +407,10 @@ class OceanDBETl(OceanDB):
             "summary", "title",
         ]
 
+        for k,v in metadata.to_dict().items():
+            print(f"k: {k} v: {v}")
+
+
         query = sql.SQL("""
             INSERT INTO {table} ({fields})
             VALUES ({placeholders})
@@ -416,16 +427,31 @@ class OceanDBETl(OceanDB):
             conn.commit()
         print(f"Inserted Metadata for {metadata.file_name}")
 
-    def ingest_along_track_file(self, file: Path):
+    def query_metadata(self):
+        query = "SELECT * FROM along_track_metadata;"
+        with pg.connect(self.connection_string) as connection:
+            with connection.cursor(row_factory=pg.rows.dict_row) as cursor:
+                cursor.execute(query)
+                rows = cursor.fetchall()
+        return set([metadata['file_name'] for metadata in rows])
+
+
+    def extract_along_track_file(self, file: Path) -> (AlongTrackData, AlongTrackMetaData):
         dataset: nc.Dataset = self.load_netcdf(file)
         along_track_data: AlongTrackData = self.extract_data_from_netcdf(ds=dataset, file=file)
         along_track_metadata: AlongTrackMetaData = self.extract_dataset_metadata(
              ds=dataset,
              file=file
         )
+        return along_track_data, along_track_metadata
+
+    def ingest_along_track_file(self, along_track_data: AlongTrackData, along_track_metadata: AlongTrackMetaData):
         self.import_along_track_data_to_postgresql(
              along_track_data=along_track_data
         )
         self.import_metadata_to_psql(
             metadata=along_track_metadata
         )
+
+
+
