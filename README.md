@@ -1,23 +1,34 @@
 # OceanDB
-OceanDB is a python package for managing oceanic satellite data intelligently.  The python package interfaces with a postgres database enabling efficient geospatial/temporal queries.  OceanDB comes with a simple CLI that allows users to initialize database & ingest data.  
+OceanDB is a python package for managing oceanic satellite data intelligently.  The python package interfaces with a postgres database enabling efficient geospatial/temporal queries.  OceanDB comes with a simple CLI that allows users to initialize the database and ingest data.  
 
-Configuring the .env 
-Using the .env.example create an .env populated with 
-```
-POSTGRES_HOST=postgres
-POSTGRES_USERNAME=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_PORT=5432
-POSTGRES_DATABASE=ocean
-
-ALONG_TRACK_DATA_DIRECTORY=/app/data/copernicus
-EDDY_DATA_DIRECTORY=/app/data/eddies
-
-COPERNICUS_PASSWORD=copernicus_marine_service_password_placeholder
-COPERNICUS_USERNAME=copernicus_marine_service_username
-```
 ## Installation Instructions
-1. **Instalalling**
+1. **Create a Copernicus Marine account (if needed)**
+   If you don't already have a Copernicus Marine account, create one. 
+
+1. **Clone OceanDB repository**
+
+2. **Configure the .env file**
+   Open the OceanDB directory, and copy the example .env.example file to .env.
+   Open the new .env file, and edit to set the postgres server and directories to download the data. 
+   ```
+   POSTGRES_HOST=postgres
+   POSTGRES_USERNAME=postgres
+   POSTGRES_PASSWORD=postgres
+   POSTGRES_PORT=5432
+   POSTGRES_DATABASE=ocean
+   
+   ALONG_TRACK_DATA_DIRECTORY=/app/data/copernicus
+   EDDY_DATA_DIRECTORY=/app/data/eddies
+   
+   COPERNICUS_PASSWORD=copernicus_marine_service_password_placeholder
+   COPERNICUS_USERNAME=copernicus_marine_service_username
+   ```
+
+4. **Setup python environment**
+   The details depend on how you use python, e.g. from the command line or an IDE like PyCharm. These instructions are specific to PyCharm.
+   
+
+1. **Install OceanDB**
    With your python environment activated
    ```bash
    pip install OceanDB 
@@ -44,9 +55,9 @@ By default if no arguments are provided this CLI command will iterate over all o
 
    ```bash
     oceandb ingest // Ingest all missions across all date ranges
-    oceandb ingest -m al  // Ingest all 'al' mission data
-    oceandb ingest -m j1 -m j3 // Multiple missions 
-    oceandb ingest -m j1 --start-date 2021-02-01 --end-date 2024-03-01  // Ingest all data between start-date & end-date  
+    oceandb ingest -m s3a  // Ingest all Sentinel-3A (s3a) mission data
+    oceandb ingest -m s3a -m j3 // Ingest multiple missions
+    oceandb ingest -m j3 --start-date 2019-01-01 --end-date 2020-12-3 // Ingest data from specific missions between start-date and end-date  
   ```
 
  
