@@ -2,12 +2,15 @@
 OceanDB is a python package for managing oceanic satellite data intelligently.  The python package interfaces with a postgres database enabling efficient geospatial/temporal queries.  OceanDB comes with a simple CLI that allows users to initialize the database and ingest data.  
 
 ## Installation Instructions
+
 1. **Create a Copernicus Marine account (if needed)**
+
    If you don't already have a Copernicus Marine account, create one. 
 
 1. **Clone OceanDB repository**
 
 2. **Configure the .env file**
+   
    Open the OceanDB directory, and copy the example .env.example file to .env.
    Open the new .env file, and edit to set the postgres server and directories to download the data. 
    ```
@@ -25,10 +28,12 @@ OceanDB is a python package for managing oceanic satellite data intelligently.  
    ```
 
 4. **Setup python environment**
+   
    The details depend on how you use python, e.g. from the command line or an IDE like PyCharm. These instructions are specific to PyCharm.
    
 
 1. **Install OceanDB**
+   
    With your python environment activated
    ```bash
    pip install OceanDB 
@@ -36,7 +41,8 @@ OceanDB is a python package for managing oceanic satellite data intelligently.  
    ```
 
 ## OceanDB Initialization Instructions
-The OceanDB package provides a CLI for 
+
+The OceanDB package provides a CLI for initializing the database and ingesting data.
 1. **Initializing the Database**
    ```bash
    oceandb init // Creates the database tables 
@@ -62,6 +68,7 @@ By default if no arguments are provided this CLI command will iterate over all o
 
  
 4. **Querying SLA Data**
+   
    To query the sea level anomaly for a given satellite mission, time range & radius around a given point
    ```python
    from datetime import datetime
@@ -83,12 +90,13 @@ By default if no arguments are provided this CLI command will iterate over all o
 ## Docker Instructions
 
 1. **Running Postgres**
+   
    If you want to spin up a postgres development container with docker-compose
    ```bash
    make run_postgres // runs postgres postgis in docker compose
    ```
    
-2. **Build OceanDB Python Image**
+3. **Build OceanDB Python Image**
    If building a development image 
    ```bash
    make build_image
