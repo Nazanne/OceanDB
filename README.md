@@ -60,10 +60,12 @@ the .env file.  ALONG_TRACK_DATA_DIRECTORY should be the file path to the direct
 By default if no arguments are provided this CLI command will iterate over all of the data
 
    ```bash
-    oceandb ingest // Ingest all missions across all date ranges
-    oceandb ingest -m s3a  // Ingest all Sentinel-3A (s3a) mission data
-    oceandb ingest -m s3a -m j3 // Ingest multiple missions
-    oceandb ingest -m j3 --start-date 2019-01-01 --end-date 2020-12-3 // Ingest data from specific missions between start-date and end-date  
+    oceandb ingest-along-track // Ingest all missions across all date ranges
+    oceandb ingest-along-track s3a  // Ingest all Sentinel-3A (s3a) mission data
+    oceandb ingest-along-track s3a j3 c2 // Ingest multiple missions
+    oceandb ingest-along-track j3 --start-date 2019-01-01 --end-date 2020-12-3 // Ingest data from specific missions between start-date and end-date
+    oceandb ingest-along-track s6a --end-date 2024-01-01 // Specify only end-date
+    oceandb ingest-along-track s6a --start-date 2024-01-01  // Specify only start-datea
   ```
 
  
