@@ -2,9 +2,21 @@ name: OceanDB
 on: push
 
 jobs:
-  docs-build:
+  docs-deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
     steps:
+      # - name: Checkout
+      #   uses: actions/checkout@v4
       - uses: actions/checkout@v5
       - name: Set up python
         uses: actions/setup-python@v5
@@ -22,23 +34,10 @@ jobs:
         run: |
           cd docs
           make html
-  docs-deploy:
-    needs: docs-build
-
-    permissions:
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-    steps:
       - name: print working directory
         run: pwd
       - name: list services
-        run: ls
+        run: ls docs
       - name: Setup GH Pages
         uses: actions/configure-pages@v5
       - name: Upload documentation
