@@ -35,12 +35,16 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - name: print working directory
+        run: pwd
+      - name: list services
+        run: ls
       - name: Setup GH Pages
         uses: actions/configure-pages@v5
       - name: Upload documentation
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './docs/build/html'
+          path: './docs/build/html/'
       - name: Deploy to GH Pages
         uses: actions/deploy-pages@v4
   #     - run:
