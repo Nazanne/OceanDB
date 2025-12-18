@@ -94,7 +94,7 @@ By default if no arguments are provided this CLI command will iterate over all o
 ## Running OceanDB scripts in PyCharm
 1. **Activate the environment & Install OceanDB**
 ``` 
-source venv/bin/activate
+source .venv/bin/activate
 pip install -e . 
 ```
 2. **Set the Pycharm Run Configuration Parameters**
