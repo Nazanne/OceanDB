@@ -22,12 +22,15 @@ author = 'Matthias Darr, Jeffrey Early, Daniel Neshyba-Rowe, Cimarron Wortham'
 extensions = [
         'sphinx.ext.autodoc',
         'sphinx.ext.autosummary',
+        'sphinx_toolbox.more_autosummary',
         'sphinx_autodoc_typehints',
         # 'sphinx.rtd_theme',
         ]
 
 templates_path = ['_templates']
 exclude_patterns = []
+always_use_bars_union = True
+always_document_param_types = True
 
 
 
