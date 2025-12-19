@@ -83,7 +83,7 @@ class AlongTrackMetaData:
 
         conventions = getattr(ds, 'Conventions', None)
 
-        print(f"CONVENTIOSNS {conventions}")
+        print(f"CONVENTIONS {conventions}")
         return cls(
             file_name=file_name,
             conventions=get("Conventions"),
