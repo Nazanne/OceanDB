@@ -217,14 +217,14 @@ class OceanDBETl(OceanDB):
         """
         mission = file.name.split('_')[2]
         try:
-            ds.variables['sla_unfiltered'].set_auto_maskandscale(False)
-            ds.variables['sla_filtered'].set_auto_maskandscale(False)
-            ds.variables['ocean_tide'].set_auto_maskandscale(False)
-            ds.variables['internal_tide'].set_auto_maskandscale(False)
-            ds.variables['lwe'].set_auto_maskandscale(False)
-            ds.variables['mdt'].set_auto_maskandscale(False)
-            ds.variables['dac'].set_auto_maskandscale(False)
-            ds.variables['tpa_correction'].set_auto_maskandscale(False)
+            ds.variables['sla_unfiltered'].set_auto_scale(False)
+            ds.variables['sla_filtered'].set_auto_scale(False)
+            ds.variables['ocean_tide'].set_auto_scale(False)
+            ds.variables['internal_tide'].set_auto_scale(False)
+            ds.variables['lwe'].set_auto_scale(False)
+            ds.variables['mdt'].set_auto_scale(False)
+            ds.variables['dac'].set_auto_scale(False)
+            ds.variables['tpa_correction'].set_auto_scale(False)
 
             time_data = ds.variables['time']  # Extract dates from the dataset and convert them to standard datetime
             time_data = nc.num2date(time_data[:], time_data.units, only_use_cftime_datetimes=False,
