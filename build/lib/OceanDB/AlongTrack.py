@@ -12,18 +12,13 @@ from OceanDB.utils.projections import spherical_transverse_mercator_to_latitude_
 @dataclass
 class SLA_Geographic:
     """
-    Make SLA data type explict
-    longitude,
-     latitude,
-	 sla_filtered,
-	 EXTRACT(EPOCH FROM ({central_date_time} - date_time)) AS time_difference_secs
-
+    Dataclass for output sea level anomaly (SLA) data in geographic coords (i.e. lat,lon).
     """
-    latitude: npt.NDArray
-    longitude: npt.NDArray
-    sla_filtered: npt.NDArray
-    distance: npt.NDArray
-    delta_t: npt.NDArray
+    latitude: npt.NDArray[np.floating]
+    longitude: npt.NDArray[np.floating]
+    sla_filtered: npt.NDArray[np.floating]
+    distance: npt.NDArray[np.floating]
+    delta_t: npt.NDArray[np.floating]
 
     def __repr__(self):
         return f"""
@@ -57,6 +52,10 @@ class SLA_Geographic:
 
 @dataclass
 class SLA_Projected(SLA_Geographic):
+    """
+    Dataclass for output sea level anomaly (SLA) data in projected coordinates (i.e. x,y)
+    """
+
     x: npt.NDArray[np.floating]
     y: npt.NDArray[np.floating]
     delta_x: npt.NDArray[np.floating]
