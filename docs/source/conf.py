@@ -25,7 +25,9 @@ extensions = [
         'sphinx_toolbox.more_autosummary',
         'sphinx_autodoc_typehints',
         # 'sphinx.rtd_theme',
+        'sphinx_mdinclude'
         ]
+source_suffix = ['.rst', 'md']
 
 templates_path = ['_templates']
 exclude_patterns = []
