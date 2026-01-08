@@ -55,7 +55,8 @@ the .env file.  ALONG_TRACK_DATA_DIRECTORY should be the file path to the direct
 
 
 
-![Screenshot 2025-12-05 at 11.19.07 AM.png](docs/Screenshot%202025-12-05%20at%2011.19.07%E2%80%AFAM.png)
+<!-- TODO: figure out how to include these images -->
+<!-- ![Screenshot 2025-12-05 at 11.19.07 AM.png](docs/Screenshot%202025-12-05%20at%2011.19.07%E2%80%AFAM.png) -->
 
 By default if no arguments are provided this CLI command will iterate over all of the data
 
@@ -101,7 +102,8 @@ pip install -e .
 
 In the top right of the PyCharm window, click the 'edit' button to configure the PyCharm run parameters
 
-![Screenshot 2025-12-18 at 12.14.04 PM.png](docs/Screenshot%202025-12-18%20at%2012.14.04%E2%80%AFPM.png)
+<!-- TODO: figure out how to include these images -->
+<!-- ![Screenshot 2025-12-18 at 12.14.04 PM.png](docs/Screenshot%202025-12-18%20at%2012.14.04%E2%80%AFPM.png) -->
 
 - **Script path**  
   Select the script you want to run, for example:  
@@ -116,7 +118,8 @@ In the top right of the PyCharm window, click the 'edit' button to configure the
 - **Environment file (.env)**  
   Set **Paths to .env files** to point to your `.env` file containing PostgreSQL credentials and any other required environment variables.
 
-![Screenshot 2025-12-18 at 12.18.01 PM.png](docs/Screenshot%202025-12-18%20at%2012.18.01%E2%80%AFPM.png)
+<!-- TODO: figure out how to include these images -->
+<!-- ![Screenshot 2025-12-18 at 12.18.01 PM.png](docs/Screenshot%202025-12-18%20at%2012.18.01%E2%80%AFPM.png) -->
 
 
 
