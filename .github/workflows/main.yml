@@ -1,5 +1,7 @@
 name: OceanDB
-on: push
+on:
+  push:
+    branches: [ "main", "docs" ]
 
 jobs:
   docs-deploy:
