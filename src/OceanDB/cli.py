@@ -1,19 +1,14 @@
 from datetime import datetime
 import click
 from pathlib import Path
-<<<<<<< HEAD
-from OceanDB.OceanDB_ETL import OceanDBETL, AlongTrackData, AlongTrackMetaData
-=======
-from multiprocessing import Pool, cpu_count
 
-from OceanDB.OceanDB_ETL import OceanDBETl, AlongTrackData, AlongTrackMetaData
->>>>>>> ingest_hang_fix
+from OceanDB.OceanDB_ETL import OceanDBETL
+
+from multiprocessing import Pool, cpu_count
 from OceanDB.OceanDB_Initializer import OceanDBInit
 from OceanDB.config import Config
 from OceanDB.utils.logging import get_logger
 
-
-import netCDF4 as nc
 import time
 
 logger = get_logger()
@@ -31,19 +26,19 @@ def process():
 @cli.command()
 def init():
     ocean_db_init = OceanDBInit()
-    ocean_db_init.create_database()
-    ocean_db_init.create_tables()
+    # ocean_db_init.create_database()
+    # ocean_db_init.create_tables()
     # ocean_db_init.create_indices()
     # ocean_db_init.create_partitions("1990-01-01", "2025-11-01")
     # ocean_db_init.validate_schema()
-    # oceandb_etl = OceanDBETL()
-    # oceandb_etl.insert_basins_data()
-    # oceandb_etl.insert_basin_connections_data()
+    oceandb_etl = OceanDBETL()
+    oceandb_etl.insert_basins_data()
+    oceandb_etl.insert_basin_connections_data()
 
 @cli.command()
 def init_eddy():
     ocean_db_init = OceanDBInit()
-    ocean_db_init.create_database()
+    # ocean_db_init.create_database()
     ocean_db_init.create_eddy_tables()
 
 @cli.command()
@@ -323,7 +318,7 @@ def ingest_along_track(missions, start_date, end_date):
         return
 
     # Query the ingested metadata so that we can skip processing files that have already been processed
-    oceandb_etl = OceanDBETl()
+    oceandb_etl = OceanDBETL()
     metadata_filenames = oceandb_etl.query_metadata()
 
     start_ingest_time = time.perf_counter()

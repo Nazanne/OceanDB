@@ -26,10 +26,11 @@ class Eddy(OceanDB):
                 data = cursor.fetchall()
                 # values["min_date"] = data[0][0]
                 # values["max_date"] = data[0][1]
-                along_query = query.format(speed_radius_scale_factor=self.variable_scale_factor["speed_radius"],
-                                                 min_date=data[0][0],
-                                                 max_date=data[0][1],
-                                                 connected_basin_ids=data[0][2])
+                along_query = query.format(
+                    speed_radius_scale_factor=self.variable_scale_factor["speed_radius"],
+                    min_date=data[0][0],
+                    max_date=data[0][1],
+                    connected_basin_ids=data[0][2])
                 cursor.execute(along_query, values)
                 data = cursor.fetchall()
 

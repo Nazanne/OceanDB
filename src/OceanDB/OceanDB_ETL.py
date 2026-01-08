@@ -512,15 +512,20 @@ class OceanDBETL(OceanDB):
         """
         start = time.perf_counter()
 
-        dataset: nc.Dataset = self.load_netcdf(file)
-        along_track_data: AlongTrackData = self.extract_along_track_from_netcdf(ds=dataset, file=file)
-        along_track_metadata: AlongTrackMetaData = self.extract_dataset_metadata(
-             ds=dataset,
-             file=file
-        )
+        try:
+            print(f"Processing {file}")
 
-        return along_track_data, along_track_metadata
+            dataset: nc.Dataset = self.load_netcdf(file)
+            along_track_data: AlongTrackData = self.extract_along_track_from_netcdf(ds=dataset, file=file)
+            along_track_metadata: AlongTrackMetaData = self.extract_dataset_metadata(
+                 ds=dataset,
+                 file=file
+            )
 
+            return along_track_data, along_track_metadata
+        except Exception as ex:
+            print(ex)
+        return
 
     def ingest_eddy_data_file(self,
                               file: Path,
