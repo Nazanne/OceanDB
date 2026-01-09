@@ -19,7 +19,7 @@ delete_volume:
 	docker volume rm oceandb_postgres_data
 
 build_image:
-	docker build -f build/Dockerfile -t ocean_db_client:latest .
+	docker build -f docker_build/Dockerfile -t ocean_db_client:latest .
 
 psql:
 	docker exec -it postgres psql -h localhost -p 5432 -U postgres -d ocean
