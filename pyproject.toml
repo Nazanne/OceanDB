@@ -33,6 +33,7 @@ dev = [
     "sphinx-autodoc-typehints",
     "sphinx-toolbox",
     "sphinx-mdinclude",
+    "sphinx-readable-theme",
 ]
 
 [tool.setuptools.packages.find]
