@@ -27,6 +27,15 @@ dependencies = [
 [project.scripts]
 oceandb = "OceanDB.cli:cli"
 
+[project.optional-dependencies]
+dev = [
+    "sphinx~=8.2",
+    "sphinx-autodoc-typehints",
+    "sphinx-toolbox",
+    "sphinx-mdinclude",
+    "sphinxawesome-theme",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["OceanDB*"]

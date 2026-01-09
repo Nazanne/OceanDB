@@ -24,14 +24,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13.x'
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
-      - name: Install OceanDB
-        run: pip install .
-      - name: Install doc dependencies
-        run: |
-          cd docs
-          pip install -r requirements.txt
+      - name: Install OceanDB and doc dependencies
+        run: pip install ".[dev]"
       - name: Build docs
         run: |
           cd docs
@@ -48,36 +42,3 @@ jobs:
           path: './docs/build/html/'
       - name: Deploy to GH Pages
         uses: actions/deploy-pages@v4
-  #     - run:
-  #         name: Install dependencies
-  #         command: pip install .
-  #     - run:
-  #         name: Build documentation
-  #         command: |
-  #             cd docs
-  #             pip install -r requirements.txt
-  #             make html
-  #     - persist_to_workspace:
-  #         root: docs/build
-  #         paths: html
-  # docs-deploy:
-  #   docker:
-  #     - image: cimg/node:16.17
-  #   steps:
-  #     - checkout
-  #     - attach_workspace:
-  #         at: docs/build
-  #     - run:
-  #         name: Disable Jekyll (static site generator) for GitHub Pages
-  #         command: touch docs/build/html/.nojekyll
-  #     - run:
-  #         name: Install gh-pages
-  #         command: npm install gh-pages@3.2.3 --silent
-  #     - run:
-  #         name: Configure Git for deployment
-  #         command: |
-  #           git config --global user.email "ci-build@example.com"
-  #           git config --global user.name "CI Build"
-  #     - run:
-  #         name: Deploy documentation to GitHub Pages
-  #         command: npx gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/build/html
