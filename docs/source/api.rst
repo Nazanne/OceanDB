@@ -6,4 +6,5 @@ API
 
    OceanDB.OceanDB
    OceanDB.AlongTrack
+   OceanDB.utils.projections
    OceanDB.EddyTrack

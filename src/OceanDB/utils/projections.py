@@ -9,10 +9,30 @@ def latitude_longitude_bounds_for_transverse_mercator_box(
         Ly: float
     ):
     """
-    lat0:
-    lon0:
-    lat: latitude
-    longitude: longitude
+    Given a bounding box in projected coordinates
+    (in the transverse Mercator projection centered around lon0),
+    compute a geographic bounding box that encloses the projected box.
+
+    :param lat0:
+        center latitude of the bounding box
+
+    :param lon0:
+        center longitude of the bounding box
+
+    :param Lx:
+        x-range of the bounding box in projected coordinates
+
+    :param Ly:
+        y-range of the bounding box in projected coordinates
+
+    :return:
+        #. center x-coordinate (projected)
+        #. center y-coordinate (projected)
+        #. minimum latitude of the bounding box
+        #. minimum longitude of the bounding box
+        #. maximum latitude of the bounding box
+        #. maximum longitude of the bounding box
+
     """
     [x0, y0] = latitude_longitude_to_spherical_transverse_mercator(lat0, lon0, lon0=lon0)
     x = np.zeros(6)
@@ -51,10 +71,17 @@ def latitude_longitude_to_spherical_transverse_mercator(
         lon0: float|npt.NDArray[np.floating]
     ):
     """
-    Accepts a latitude & longitude and returns a projected coordinate according to transverse mercator
-    lat: latitude
-    longitude: longitude
-    lon0:
+    Project a lat/lon to x/y in the transverse Mercator projection centered around `lon0`.
+
+    :param lat:
+        single latitude or n-array of latitudes to project
+
+    :param longitude:
+        single longitude or n-array longitudes to project
+
+    :param lon0:
+        reference longitude to center the projection around
+
     """
     k0 = 0.9996
     WGS84a = 6378137.
