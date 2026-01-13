@@ -306,6 +306,8 @@ class AlongTrack(OceanDB):
         :param time_window: a single time window to use for all query points. Defaults to 856,710s (about 10 days)
         :param missions: list of missions to pull data from. Defaults to using all available missions
 
+        :return: For each query point, yield resultant data as geographic points (lat, lon, and distance from query point. See :class:`SLA_Geographic`). If no data exists for a given query point, yields `None` instead.
+
         """
         query = self.load_sql_file(self.geo_spatiotemporal_query)
 
