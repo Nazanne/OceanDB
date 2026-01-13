@@ -284,18 +284,27 @@ class AlongTrack(OceanDB):
                                   longitudes: npt.NDArray[np.floating],
                                   dates: List[datetime],
                                   radii: List[float]|float=500000.0,
-                                  time_window=timedelta(seconds=856710),
-                                  missions=None
+                                  time_window: timedelta =timedelta(seconds=856710),
+                                  missions: list[str]|None=None
                                   ) -> Generator[SLA_Geographic|None, None, None]:
         """
-        Runs the geographic_points_in_spatialtemporal_window query for every point in the latitudes and longitudes arrays and dates list.
+        Queries the along-track database for all SLA data points within a
+        (absolute distance) radius around query points and in a given time window.
 
-        Returns all along_track points within the geospatial window within distance
+        A query point is characterized by:
+            #. a latitude
+            #. a longitude
+            #. a date
+            #. a radius
+            #. a time window
 
-        :param latitudes: n-array
-        :param longitudes: n-array
-        :param dates: n-list
-        :param radii
+        :param latitudes: n-array of query latitudes
+        :param longitudes: n-array of query longitudes
+        :param dates: n-list of query dates
+        :param radii: either an n-list of query radii in meters,
+                      or a single radius to use for all query points. Defaults to 500,000m
+        :param time_window: a single time window to use for all query points. Defaults to 856,710s (about 10 days)
+        :param missions: list of missions to pull data from. Defaults to using all available missions
 
         """
         query = self.load_sql_file(self.geo_spatiotemporal_query)
