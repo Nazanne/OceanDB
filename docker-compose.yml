@@ -12,7 +12,6 @@ services:
     env_file:
       - .env
     volumes:
-      - ./OceanDB:/app/OceanDB
-      - ./data:/app/data
+      - .:/app/OceanDB
     networks:
       - ocean_network
