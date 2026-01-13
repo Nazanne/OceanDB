@@ -357,7 +357,46 @@ class AlongTrack(OceanDB):
                                  missions=None
                                  ) -> Generator[SLA_Projected | None, None, None]:
         """
-        Get projected points around a reference point in a geographic radius and time interval
+        Queries the along-track database for all SLA data points within a
+        (absolute distance) radius around query points and in a given time window.
+        Resulting data is given in projected coordinates
+        (the default projection is
+        :func:`tranverse Mercator<OceanDB.utils.projections.latitude_longitude_to_spherical_transverse_mercator>`
+        centered around the query point's longitude).
+
+        A query point is characterized by:
+            #. a latitude
+            #. a longitude
+            #. a date
+            #. a radius
+            #. a time window
+
+        :param latitudes:
+            n-array of query latitudes
+
+        :param longitudes:
+            n-array of query longitudes
+
+        :param dates:
+            n-list of query dates
+
+        :param radii:
+            either an n-list of query radii in meters, or a single radius to use
+            for all query points. Defaults to 500,000m
+
+        :param time_window:
+            a single time window to use for all query points. Defaults to
+            856,710s (about 10 days)
+
+        :param missions:
+            list of missions to pull data from. Defaults to using all available
+            missions
+
+        :return:
+            For each query point, yield resultant data as projected points
+            centered around the query point (See :class:`SLA_Projected`). If no
+            data exists for a given query point, yields `None` instead.
+
         """
 
         sla_geographic_data_points = self.geographic_points_in_r_dt(
