@@ -25,7 +25,9 @@ extensions = [
         'sphinx_toolbox.more_autosummary',
         'sphinx_autodoc_typehints',
         # 'sphinx.rtd_theme',
+        'sphinx_mdinclude'
         ]
+source_suffix = ['.rst', 'md']
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -35,8 +37,8 @@ always_document_param_types = True
 
 
 # -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-import sphinx_readable_theme
-html_theme_path = [sphinx_readable_theme.get_html_theme_path()]
-html_theme = 'readable'
+
+html_permalinks_icon = '<span>#</span>'
+html_theme = 'sphinxawesome_theme'
+
 html_static_path = ['_static']

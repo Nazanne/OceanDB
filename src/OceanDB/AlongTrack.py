@@ -283,19 +283,30 @@ class AlongTrack(OceanDB):
                                   latitudes: npt.NDArray[np.floating],
                                   longitudes: npt.NDArray[np.floating],
                                   dates: List[datetime],
-                                  distances: List[float]|float=500000.0,
-                                  time_window=timedelta(seconds=856710),
-                                  missions=None
+                                  radii: List[float]|float=500000.0,
+                                  time_window: timedelta =timedelta(seconds=856710),
+                                  missions: list[str]|None=None
                                   ) -> Generator[SLA_Geographic|None, None, None]:
         """
-        Runs the geographic_points_in_spatialtemporal_window query for every point in the latitudes and longitudes arrays and dates list.
+        Queries the along-track database for all SLA data points within a
+        (absolute distance) radius around query points and in a given time window.
 
-        Returns all along_track points within the geospatial window within distance
+        A query point is characterized by:
+            #. a latitude
+            #. a longitude
+            #. a date
+            #. a radius
+            #. a time window
 
-        :param latitudes: n-array
-        :param longitudes: n-array
-        :param dates: n-list
-        :param distances
+        :param latitudes: n-array of query latitudes
+        :param longitudes: n-array of query longitudes
+        :param dates: n-list of query dates
+        :param radii: either an n-list of query radii in meters,
+                      or a single radius to use for all query points. Defaults to 500,000m
+        :param time_window: a single time window to use for all query points. Defaults to 856,710s (about 10 days)
+        :param missions: list of missions to pull data from. Defaults to using all available missions
+
+        :return: For each query point, yield resultant data as geographic points (lat, lon, and distance from query point. See :class:`SLA_Geographic`). If no data exists for a given query point, yields `None` instead.
 
         """
         query = self.load_sql_file(self.geo_spatiotemporal_query)
@@ -303,8 +314,8 @@ class AlongTrack(OceanDB):
         if missions is None:
             missions = self.missions
 
-        if not isinstance(distances, list):
-            distances = [distances]*len(latitudes)
+        if not isinstance(radii, list):
+            radii = [radii]*len(latitudes)
 
 
         basin_ids = self.basin_mask(latitudes, longitudes)
@@ -320,7 +331,7 @@ class AlongTrack(OceanDB):
                 "connected_basin_ids": connected_basins,
                 "missions": [missions]
             }
-            for latitude, longitude, date, connected_basins, distance in zip(latitudes, longitudes, dates, connected_basin_ids, distances)
+            for latitude, longitude, date, connected_basins, distance in zip(latitudes, longitudes, dates, connected_basin_ids, radii)
         ]
 
 
@@ -341,19 +352,58 @@ class AlongTrack(OceanDB):
                                  latitudes: npt.NDArray[np.floating],
                                  longitudes: npt.NDArray[np.floating],
                                  dates: List[datetime],
-                                 distances: List[float]|float=500000.0,
+                                 radii: List[float]|float=500000.0,
                                  time_window=timedelta(seconds=856710),
                                  missions=None
                                  ) -> Generator[SLA_Projected | None, None, None]:
         """
-        Get projected points around a reference point in a geographic radius and time interval
+        Queries the along-track database for all SLA data points within a
+        (absolute distance) radius around query points and in a given time window.
+        Resulting data is given in projected coordinates
+        (the default projection is
+        :func:`tranverse Mercator<OceanDB.utils.projections.latitude_longitude_to_spherical_transverse_mercator>`
+        centered around the query point's longitude).
+
+        A query point is characterized by:
+            #. a latitude
+            #. a longitude
+            #. a date
+            #. a radius
+            #. a time window
+
+        :param latitudes:
+            n-array of query latitudes
+
+        :param longitudes:
+            n-array of query longitudes
+
+        :param dates:
+            n-list of query dates
+
+        :param radii:
+            either an n-list of query radii in meters, or a single radius to use
+            for all query points. Defaults to 500,000m
+
+        :param time_window:
+            a single time window to use for all query points. Defaults to
+            856,710s (about 10 days)
+
+        :param missions:
+            list of missions to pull data from. Defaults to using all available
+            missions
+
+        :return:
+            For each query point, yield resultant data as projected points
+            centered around the query point (See :class:`SLA_Projected`). If no
+            data exists for a given query point, yields `None` instead.
+
         """
 
         sla_geographic_data_points = self.geographic_points_in_r_dt(
             latitudes=latitudes,
             longitudes=longitudes,
             dates = dates,
-            distances=distances,
+            radii=radii,
             time_window=time_window,
             missions=missions
         )
