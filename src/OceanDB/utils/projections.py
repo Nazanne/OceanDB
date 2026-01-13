@@ -76,7 +76,7 @@ def latitude_longitude_to_spherical_transverse_mercator(
     :param lat:
         single latitude or n-array of latitudes to project
 
-    :param longitude:
+    :param lon:
         single longitude or n-array longitudes to project
 
     :param lon0:
