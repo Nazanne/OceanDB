@@ -283,7 +283,7 @@ class AlongTrack(OceanDB):
                                   latitudes: npt.NDArray[np.floating],
                                   longitudes: npt.NDArray[np.floating],
                                   dates: List[datetime],
-                                  distances: List[float]|float=500000.0,
+                                  radii: List[float]|float=500000.0,
                                   time_window=timedelta(seconds=856710),
                                   missions=None
                                   ) -> Generator[SLA_Geographic|None, None, None]:
@@ -295,7 +295,7 @@ class AlongTrack(OceanDB):
         :param latitudes: n-array
         :param longitudes: n-array
         :param dates: n-list
-        :param distances
+        :param radii
 
         """
         query = self.load_sql_file(self.geo_spatiotemporal_query)
@@ -303,8 +303,8 @@ class AlongTrack(OceanDB):
         if missions is None:
             missions = self.missions
 
-        if not isinstance(distances, list):
-            distances = [distances]*len(latitudes)
+        if not isinstance(radii, list):
+            radii = [radii]*len(latitudes)
 
 
         basin_ids = self.basin_mask(latitudes, longitudes)
@@ -320,7 +320,7 @@ class AlongTrack(OceanDB):
                 "connected_basin_ids": connected_basins,
                 "missions": [missions]
             }
-            for latitude, longitude, date, connected_basins, distance in zip(latitudes, longitudes, dates, connected_basin_ids, distances)
+            for latitude, longitude, date, connected_basins, distance in zip(latitudes, longitudes, dates, connected_basin_ids, radii)
         ]
 
 
@@ -341,7 +341,7 @@ class AlongTrack(OceanDB):
                                  latitudes: npt.NDArray[np.floating],
                                  longitudes: npt.NDArray[np.floating],
                                  dates: List[datetime],
-                                 distances: List[float]|float=500000.0,
+                                 radii: List[float]|float=500000.0,
                                  time_window=timedelta(seconds=856710),
                                  missions=None
                                  ) -> Generator[SLA_Projected | None, None, None]:
@@ -353,7 +353,7 @@ class AlongTrack(OceanDB):
             latitudes=latitudes,
             longitudes=longitudes,
             dates = dates,
-            distances=distances,
+            radii=radii,
             time_window=time_window,
             missions=missions
         )
