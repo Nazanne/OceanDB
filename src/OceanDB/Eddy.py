@@ -107,6 +107,8 @@ class Eddy(OceanDB):
     along_track_near_eddy_query = 'queries/eddy/along_track_near_eddy.sql'
     eddy_with_id_query = 'queries/eddy/eddy_from_track_id.sql'
 
+    speed_radius_scale_factor = 50
+
 
     def __init__(self):
         super().__init__()
@@ -286,13 +288,63 @@ class Eddy(OceanDB):
              'add_offset': 0,
              'dtype': 'uint16'}]
 
+
+
     def along_track_points_near_eddy(self, track_id):
+        """
+        Retrieve along-track altimetry points spatially and temporally associated
+        with a given eddy track.
+
+        This method performs a two-stage query:
+
+        1. It first determines the temporal extent of the specified eddy track
+           (minimum and maximum `date_time`) and collects all basin identifiers
+           associated with the eddy, including directly intersecting basins and
+           their connected basins.
+
+        2. It then queries the `along_track` table for altimetry observations that:
+           - Occur within the eddy's lifetime (with an additional 1-day tolerance),
+           - Lie within a distance threshold of the eddy center
+             (`speed_radius * scale_factor * 2.0`),
+           - Belong to one of the basins connected to the eddy.
+
+        Parameters
+        ----------
+        track_id : int
+            Signed eddy track identifier. The sign encodes cyclonic polarity and
+            is matched against `eddy.track * eddy.cyclonic_type`.
+
+        Returns
+        -------
+        list[tuple]
+            A list of rows from the `along_track` table containing altimetry
+            measurements near the eddy. Each row includes spatial coordinates,
+            sea level anomaly values, timing information, and geophysical
+            correction terms.
+
+        Notes
+        -----
+        - Temporal filtering is based on `TIMESTAMP WITHOUT TIME ZONE` columns;
+          all timestamps are assumed to be naive and expressed in a consistent
+          reference time (typically UTC).
+        - Spatial filtering uses PostGIS geography types and `ST_DWithin`, with
+          distances interpreted in meters.
+        - The spatial search radius is derived from the eddy `speed_radius` and
+          scaled using `self.variable_scale_factor["speed_radius"]`.
+        - Basin connectivity is resolved via the `basin_connections` table.
+        - This method assumes the eddy track exists; no explicit guard is
+          performed for empty result sets.
+
+
+        """
         eddy_query = """SELECT MIN(date_time), MAX(date_time), array_agg(distinct connected_id) || array_agg(distinct basin.id)
                             FROM eddy 
                             LEFT JOIN basin ON ST_Intersects(basin.basin_geog, eddy.eddy_point)
-                            LEFT JOIN basin_connection ON basin_connection.basin_id = basin.id
+                            LEFT JOIN basin_connections ON basin_connections.basin_id = basin.id
                             WHERE eddy.track * eddy.cyclonic_type=%(track_id)s
                             GROUP BY track, cyclonic_type;"""
+
+
         along_query = """SELECT atk.file_name, atk.track, atk.cycle, atk.latitude, atk.longitude, atk.sla_unfiltered, atk.sla_filtered, atk.date_time as time, atk.dac, atk.ocean_tide, atk.internal_tide, atk.lwe, atk.mdt, atk.tpa_correction
                        FROM eddy
                        INNER JOIN along_track atk ON atk.date_time BETWEEN eddy.date_time AND (eddy.date_time + interval '1 day')
@@ -306,10 +358,16 @@ class Eddy(OceanDB):
             with connection.cursor() as cursor:
                 cursor.execute(eddy_query, values)
                 data = cursor.fetchall()
-                # values["min_date"] = data[0][0]
-                # values["max_date"] = data[0][1]
+
+                values["min_date"] = data[0][0]
+                values["max_date"] = data[0][1]
+
+
+                print(data)
+
                 along_query = along_query.format(
-                    speed_radius_scale_factor=self.variable_scale_factor["speed_radius"],
+                    # speed_radius_scale_factor=self.variable_scale_factor["speed_radius"],
+                    speed_radius_scale_factor=100,
                     min_date=data[0][0],
                     max_date=data[0][1],
                     connected_basin_ids=data[0][2])
@@ -318,6 +376,61 @@ class Eddy(OceanDB):
 
         return data
 
+    def get_eddy_tracks_from_times(self, start_date, end_date):
+        """
+        Retrieve distinct eddy track identifiers observed within a given time range.
+
+        This method queries the `eddy` table and returns all unique `track` values
+        for which at least one observation has a `date_time` between `start_date`
+        and `end_date` (inclusive).
+
+        Parameters
+        ----------
+        start_date : datetime.datetime
+            Start of the time range (inclusive). Must be a **naive datetime**
+            (i.e. `tzinfo is None`) and expressed in the same reference time
+            used when writing to the database (typically UTC).
+        end_date : datetime.datetime
+            End of the time range (inclusive). Must be a **naive datetime**
+            (i.e. `tzinfo is None`) and expressed in the same reference time
+            used when writing to the database (typically UTC).
+
+        Returns
+        -------
+        list[int]
+            A sorted list of distinct eddy track numbers that have observations
+            within the specified time range.
+
+        Notes
+        -----
+        - The underlying database column is `TIMESTAMP WITHOUT TIME ZONE`,
+          so timezone-aware datetimes are not supported.
+        - Passing timezone-aware datetimes will raise an error in psycopg.
+        - The query is parameterized to prevent SQL injection.
+        - Results are ordered by `track` for deterministic output.
+
+        Examples
+        --------
+        [1023, 1024, 1025]
+        """
+        query = """
+        SELECT DISTINCT track
+        FROM eddy
+        WHERE date_time >= %(start_date)s
+          AND date_time <  %(end_date)s
+        ORDER BY track;
+        """
+
+        params = {
+            "start_date": start_date,  # datetime.datetime
+            "end_date": end_date,
+        }
+
+        with pg.connect(self.config.postgres_dsn) as connection:
+            with connection.cursor() as cur:
+                cur.execute(query, params)
+                tracks = [row[0] for row in cur.fetchall()]
+            return tracks
 
     def eddy_with_track_id(self, track_id) -> list[EddyTrackObservation]:
         """
@@ -336,4 +449,19 @@ class Eddy(OceanDB):
         return observations
 
 eddy = Eddy()
-eddy.eddy_with_track_id(track_id=4)
+#eddy.eddy_with_id_querytrack_id(track_id=4)
+
+tracks = eddy.get_eddy_tracks_from_times(
+    start_date=datetime(2013, 1, 1),
+    end_date=datetime(2013, 4, 1)
+)
+
+print(tracks)
+# print(f"number of tracks {len(tracks)}")
+
+data = eddy.along_track_points_near_eddy(track_id=9844)
+
+
+
+# print(len(data))
+# print(type(data))
