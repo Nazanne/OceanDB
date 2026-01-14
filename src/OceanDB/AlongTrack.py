@@ -3,137 +3,10 @@ import psycopg as pg
 from datetime import timedelta, datetime
 import numpy as np
 import numpy.typing as npt
-from dataclasses import dataclass
 
 from OceanDB.OceanDB import OceanDB
 from OceanDB.utils.projections import spherical_transverse_mercator_to_latitude_longitude, latitude_longitude_to_spherical_transverse_mercator, latitude_longitude_bounds_for_transverse_mercator_box
-
-
-@dataclass
-class SLA_Geographic:
-    """
-    Dataclass for output sea level anomaly (SLA) data in geographic coords (i.e. lat,lon).
-    """
-    latitude: npt.NDArray[np.floating]
-    longitude: npt.NDArray[np.floating]
-    sla_filtered: npt.NDArray[np.floating]
-    distance: npt.NDArray[np.floating]
-    delta_t: npt.NDArray[np.floating]
-
-    def __repr__(self):
-        return f"""
-        latitude: {self.latitude[:10]}...
-        longitude: {self.longitude[:10]} ...
-        delta_t: {self.delta_t[:10]} ...
-        sla_filtered: {self.sla_filtered[:10]} ...
-        """
-
-    @classmethod
-    def from_rows(cls,
-                 rows: list,
-                 variable_scale_factor
-                 ):
-
-        return cls(
-            latitude = np.array([row['latitude'] for row in rows]),
-            longitude = np.array([row['longitude'] for row in rows]),
-            sla_filtered = variable_scale_factor * np.array([row['sla_filtered'] for row in rows]),
-            distance = np.array([row['distance'] for row in rows]),
-            delta_t = np.array([row['time_difference_secs'] for row in rows], dtype=np.float64)
-        )
-
-    def to_dict(self):
-        return {
-            'longitude': self.longitude,
-            'latitude': self.latitude,
-            'sla_filtered': self.sla_filtered,
-            'delta_t': self.delta_t
-        }
-
-@dataclass
-class SLA_Projected(SLA_Geographic):
-    """
-    Dataclass for output sea level anomaly (SLA) data in projected coordinates (i.e. x,y)
-    """
-
-    x: npt.NDArray[np.floating]
-    y: npt.NDArray[np.floating]
-    delta_x: npt.NDArray[np.floating]
-    delta_y: npt.NDArray[np.floating]
-
-    @classmethod
-    def from_sla_geographic(
-            cls,
-            sla_geographic: SLA_Geographic,
-            latitude: float,
-            longitude: float,
-            projection_function: Callable = latitude_longitude_to_spherical_transverse_mercator,
-            x0: float|None = None,
-            y0: float|None = None,
-            ):
-        """
-        Compute projected datapoints, using a geographic datapoint and projection information.
-        Either (x0,y0) or (latitude, longitude) must be specified.
-        """
-        if x0 is None or y0 is None:
-            x0, y0 = projection_function(
-                lat=latitude,
-                lon=longitude,
-                lon0=longitude
-                )
-        x, y = projection_function(
-            lat=sla_geographic.latitude,
-            lon = sla_geographic.longitude,
-            lon0=longitude
-        )
-        return cls(
-                **sla_geographic.__dict__,
-                x = x,
-                y = y,
-                delta_x = x - x0,
-                delta_y = y - y0,
-                )
-    @classmethod
-    def from_sla_geographic_filter_dx_dy(
-            cls,
-            sla_geographic: SLA_Geographic,
-            dx: float,
-            dy: float,
-            projection_function: Callable = latitude_longitude_to_spherical_transverse_mercator,
-            latitude: float|None = None,
-            longitude: float|None = None,
-            x0: float|None = None,
-            y0: float|None = None,
-            ):
-        """
-        Compute projected datapoints, using a geographic datapoint and projection information,
-        and filter to within a box in projected range x in (x0-dx, x0+dx) and y in (y0-dy, y0+dy).
-        Either (x0,y0) or (latitude, longitude) must be specified.
-        """
-        if x0 is None or y0 is None:
-            x0, y0 = projection_function(
-                lat=latitude,
-                lon=longitude,
-                lon0=longitude
-            )
-        x, y = projection_function(
-            lat=sla_geographic.latitude,
-            lon = sla_geographic.longitude,
-            lon0=longitude
-        )
-
-        # filter out points that are out of bounds
-        out_of_bounds = (x < x0 - dx) | (x > x0 + dx) | (y < y0 - dy) | (y > y0 + dy)
-        x = x[~out_of_bounds]
-        y = y[~out_of_bounds]
-
-        return cls(
-                **{name: value[~out_of_bounds] for name,value in sla_geographic.__dict__.items()},
-                x = x,
-                y = y,
-                delta_x = x - x0,
-                delta_y = y - y0,
-                )
+from OceanDB.OceanData import CreateOceanData, OceanData
 
 
 class AlongTrack(OceanDB):
@@ -161,6 +34,15 @@ class AlongTrack(OceanDB):
                 self.variable_scale_factor[metadata['var_name']] = metadata['scale_factor']
             if 'add_offset' in metadata:
                 self.variable_add_offset[metadata['var_name']] = metadata['add_offset']
+
+        self.sla_geographic_output = CreateOceanData()
+        self.sla_geographic_output.register('latitude', 'deg')
+        self.sla_geographic_output.register('longitude', 'deg')
+        self.sla_geographic_output.register('sla_filtered', 'm')
+        self.sla_geographic_output.register('distance', 'm')
+        self.sla_geographic_output.register('delta_t', 'date')
+
+        self.sla_projected_output = CreateOceanData()
 
     @staticmethod
     def along_track_variable_metadata():
@@ -243,7 +125,7 @@ class AlongTrack(OceanDB):
                                      dates: List[datetime],
                                      time_window=timedelta(seconds=856710),
                                      missions=None
-                                     ) -> Generator[SLA_Geographic|None, None, None]:
+                                     ) -> Generator[OceanData|None, None, None]:
         """
         Given an array of spatiotemporal points, returns the THREE closest data points to each
         """
@@ -274,8 +156,7 @@ class AlongTrack(OceanDB):
                     if not rows:
                         yield None
                     else:
-                        data = SLA_Geographic.from_rows(rows, self.variable_scale_factor["sla_filtered"])
-                        yield data
+                        yield self.sla_geographic_output(rows)
                     if not cursor.nextset():
                         break
 
