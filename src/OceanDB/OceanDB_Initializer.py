@@ -36,20 +36,22 @@ table_definitions = [
         "filepath": "tables/create_basin_connection_table.sql",
         "params": {"table_name": "basin_connection"},
     }
-
-
-    # {
-    #     "name": "eddy",
-    #     "filepath": "tables/create_eddy_table.sql",
-    #     "params": {"table_name": "eddy"},
-    # },
-    # {
-    #     "name": "chelton_eddy",
-    #     "filepath": "tables/create_chelton_eddy_table.sql",
-    #     "params": {"table_name": "chelton_eddy"},
-    # },
-
 ]
+
+
+eddy_tables = [
+    {
+        "name": "eddy",
+        "filepath": "tables/create_eddy_table.sql",
+        "params": {"table_name": "eddy"},
+    },
+    {
+        "name": "chelton_eddy",
+        "filepath": "tables/create_chelton_eddy_table.sql",
+        "params": {"table_name": "chelton_eddy"},
+    }
+]
+
 
 sql_index_files = [
     {
@@ -149,6 +151,20 @@ sql_index_files = [
     # }
 ]
 
+eddy_index_files = [
+    {
+        "name": "eddy_index_point",
+        "filepath": "indices/eddy/create_eddy_index_point.sql",
+        "params": {"index_name": "eddy_index_point"},
+    },
+    {
+        "name": "eddy_index_track_cyclonic_type",
+        "filepath": "indices/eddy/create_eddy_index_track_cyclonic_type.sql",
+        "params": {"index_name": "eddy_index_track_cyclonic_type"},
+    }
+]
+
+
 
 
 EXPECTED_TABLE_INDEXES = {
@@ -218,13 +234,32 @@ class OceanDBInit(OceanDB):
             except Exception as ex:
                 self.logger.info(f"{table_name}")
                 self.logger.info(ex)
-    #
+
+    def create_eddy_tables(self):
+        for table in eddy_tables:
+            try:
+                table_name = table['name']
+                query = self.parametrize_sql_statements(table)
+                self.execute_query(table, query)
+                self.logger.info(f"Executing {table_name}")
+            except Exception as ex:
+                self.logger.info(f"{table}")
+                self.logger.info(ex)
+
     def create_indices(self):
         for index in sql_index_files:
             table_name = index['name']
             query = self.parametrize_sql_statements(index)
             self.execute_query(index, query)
             self.logger.info(f"Executing {table_name}")
+
+    def create_eddy_indices(self):
+        for index in eddy_index_files:
+            table_name = index['name']
+            query = self.parametrize_sql_statements(index)
+            self.execute_query(index, query)
+            self.logger.info(f"Executing {table_name}")
+
 
     def create_partitions(self, min_date, max_date):
         """

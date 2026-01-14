@@ -28,7 +28,6 @@ class Config(BaseSettings):
     def postgres_dsn_admin(self) -> str:
         return (
             f"host={self.postgres_host} "
-            # f"dbname={self.postgres_database} "
             f"port={self.postgres_port} "
             f"user={self.postgres_username} "
             f"password={self.postgres_password}"
