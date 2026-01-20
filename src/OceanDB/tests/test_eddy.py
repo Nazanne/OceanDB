@@ -15,5 +15,5 @@ eddy = Eddy()
 
 output = eddy.eddy_with_track_id(track_id=4)
 
-# output = eddy.along_track_points_near_eddy(track_id=9844)
+along_track_eddy_output = eddy.along_track_points_near_eddy(track_id=9844)
 
