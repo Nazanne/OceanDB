@@ -1,7 +1,7 @@
 import numpy as np
 from datetime import datetime
-from OceanDB.data_access import AlongTrack
-
+from OceanDB.data_access.along_track import AlongTrack
+from OceanDB.ocean_data.ocean_data import OceanData
 along_track = AlongTrack()
 
 
@@ -17,5 +17,5 @@ sla_geographic = along_track.geographic_points_in_r_dt(
     latitudes=np.array([latitude]), longitudes=np.array([longitude]), dates=[date]
 )
 
-for d in sla_geographic:
-    print(d)
+sla_geographic = list(sla_geographic)
+output_data = sla_geographic[0]
