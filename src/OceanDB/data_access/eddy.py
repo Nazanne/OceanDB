@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Tuple
 
+from OceanDB.data_access.base_query import BaseQuery
+
 
 @dataclass(frozen=True, slots=True)
 class EddyTrackObservation:
@@ -93,7 +95,7 @@ class AlongTrackEddyObservation:
         return self.sla_filtered
 
 
-class Eddy(OceanDB):
+class Eddy(BaseQuery):
     eddy_table_name: str = "eddy"
     eddy_metadata_table_name: str = "eddy_metadata"
     eddies_file_path: str

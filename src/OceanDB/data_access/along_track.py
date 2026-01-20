@@ -1,16 +1,15 @@
-from typing import Iterable, List
 from datetime import datetime, timedelta
 from typing import Iterable, List
 import psycopg as pg
 import numpy.typing as npt
 import numpy as np
 
-from OceanDB.OceanDB import OceanDB
-from OceanDB.ocean_data.along_track_dataset import AlongTrackDataset
+from OceanDB.data_access.base_query import BaseQuery
+from OceanDB.ocean_data.datasets import AlongTrackDataset
 from OceanDB.ocean_data.ocean_data import OceanData
 
 
-class AlongTrack(OceanDB):
+class AlongTrack(BaseQuery):
     """
     Query/Service object
 
@@ -55,107 +54,25 @@ class AlongTrack(OceanDB):
         "queries/along_track/geographic_points_in_spatialtemporal_window.sql"
     )
 
-    ALONG_TRACK_VARIABLES = {
-        "sla_unfiltered": {
-            "dtype": np.float64,
-            "scale": 0.001,
-            "add_offset": None,
-            "attrs": {
-                "long_name": "...",
-                "standard_name": "sea_surface_height_above_sea_level",
-                "units": "m",
-                "comment": "...",
-            },
-        },
-        "sla_filtered": {
-            "dtype": np.float64,
-            "scale": 0.001,
-            "add_offset": 0.0,
-            "fill_value": 32767,
-            "attrs": {
-                "long_name": "...",
-                "standard_name": "sea_surface_height_above_sea_level",
-                "units": "m",
-                "comment": "...",
-            },
-        },
-        "dac": {
-            "dtype": np.float64,
-            "scale": 0.001,
-            "add_offset": None,
-            "attrs": {
-                "long_name": "Dynamic Atmospheric Correction",
-                "units": "m",
-            },
-        },
-        "time": {
-            "dtype": np.float64,
-            "scale": None,
-            "add_offset": None,
-            "attrs": {
-                "standard_name": "time",
-                "units": "days since 1950-01-01 00:00:00",
-                "calendar": "gregorian",
-            },
-        },
-        "track": {
-            "dtype": np.int16,
-            "scale": None,
-            "add_offset": None,
-            "attrs": {
-                "long_name": "Track in cycle the measurement belongs to",
-                "units": "1",
-            },
-        },
-        "cycle": {
-            "dtype": np.int16,
-            "scale": None,
-            "add_offset": None,
-            "attrs": {
-                "long_name": "Cycle the measurement belongs to",
-                "units": "1",
-            },
-        },
-        "ocean_tide": {
-            "dtype": np.float64,
-            "scale": 0.001,
-            "add_offset": None,
-            "attrs": {
-                "long_name": "Ocean tide model",
-                "units": "m",
-            },
-        },
-        "internal_tide": {
-            "dtype": np.float64,
-            "scale": 0.001,
-            "add_offset": None,
-            "attrs": {
-                "long_name": "Internal tide correction",
-                "units": "m",
-            },
-        },
-        "lwe": {
-            "dtype": np.float64,
-            "scale": 0.001,
-            "add_offset": None,
-            "attrs": {
-                "long_name": "Long wavelength error",
-                "units": "m",
-            },
-        },
-        "mdt": {
-            "dtype": np.float64,
-            "scale": 0.001,
-            "add_offset": None,
-            "attrs": {
-                "standard_name": "sea_surface_height_above_geoid",
-                "units": "m",
-            },
-        },
-    }
+
 
     def __init__(self):
         super().__init__()
+
+
+    def _build_along_track_dataset(
+            self,
+            rows,
+    ) -> OceanData[AlongTrackDataset]:
+        ocean_data = OceanData()
+        ocean_data.add(
+            AlongTrackDataset.from_rows(
+                rows,
+                variable_scale_factor=self.METADATA['along_track'],
+            )
+        )
+        return ocean_data
+
 
     def geographic_nearest_neighbors_dt(
             self,
@@ -203,19 +120,6 @@ class AlongTrack(OceanDB):
                     if not cursor.nextset():
                         break
 
-
-    def _build_along_track_dataset(
-            self,
-            rows,
-    ) -> OceanData[AlongTrackDataset]:
-        ocean_data = OceanData()
-        ocean_data.add(
-            AlongTrackDataset.from_rows(
-                rows,
-                variable_scale_factor=self.ALONG_TRACK_VARIABLES,
-            )
-        )
-        return ocean_data
 
     def geographic_points_in_r_dt(
             self,
