@@ -16,6 +16,7 @@ logger = get_logger()
 def cli():
     pass
 
+
 @cli.command()
 def process():
     logger.info("OceanDB")
@@ -32,7 +33,6 @@ def init():
     oceandb_etl = BaseETL()
     oceandb_etl.insert_basins_data()
     oceandb_etl.insert_basin_connections_data()
-
 
 
 @cli.command()
@@ -73,11 +73,17 @@ def ingest_eddy():
     eddy_directory = oceandb_etl.config.eddy_data_directory
 
     print("Processing Ingesting META3.2_DT_allsat_Cyclonic_long_19930101_20220209.nc")
-    cyclonic_filepath = Path(f"{eddy_directory}/META3.2_DT_allsat_Cyclonic_long_19930101_20220209.nc")
+    cyclonic_filepath = Path(
+        f"{eddy_directory}/META3.2_DT_allsat_Cyclonic_long_19930101_20220209.nc"
+    )
     oceandb_etl.ingest_eddy_data_file(cyclonic_filepath, cyclonic_type=-1)
 
-    print("Processing Ingesting META3.2_DT_allsat_Anticyclonic_long_19930101_20220209.nc")
-    anticyclonic_filepath = Path(f"{eddy_directory}/META3.2_DT_allsat_AntiCyclonic_long_19930101_20220209.nc")
+    print(
+        "Processing Ingesting META3.2_DT_allsat_Anticyclonic_long_19930101_20220209.nc"
+    )
+    anticyclonic_filepath = Path(
+        f"{eddy_directory}/META3.2_DT_allsat_AntiCyclonic_long_19930101_20220209.nc"
+    )
     oceandb_etl.ingest_eddy_data_file(anticyclonic_filepath, cyclonic_type=1)
 
 
@@ -97,7 +103,6 @@ def download():
         )
         return
 
-
     if not files:
         click.echo(f"Found {len(files)} file(s) in directory. No need to download.")
         click.echo("✔ Data already exists.")
@@ -111,14 +116,12 @@ def download():
 
         # 4️⃣ Ask the user if they want to continue
         proceed = click.confirm(
-            "Do you want to proceed with downloading 20+ GB of data?",
-            default=False
+            "Do you want to proceed with downloading 20+ GB of data?", default=False
         )
 
         if not proceed:
             click.echo("Download canceled.")
             return
-
 
     oceandb_cm = OceanDBCopernicusMarine()
     # click.echo("\n⬇️  Starting download... (this may take hours)")
@@ -136,14 +139,17 @@ def parse_date(ctx, param, value) -> datetime:
     except ValueError:
         raise click.BadParameter(f"Invalid date format: {value}. Use YYYY-MM-DD.")
 
+
 from datetime import datetime
 
 EARLIEST_DATE = datetime(1990, 1, 1)
+
 
 def _to_naive(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
     return dt.replace(tzinfo=None)
+
 
 def iter_year_months(
     start: datetime | None,
@@ -182,10 +188,8 @@ def iter_year_months(
 
 
 def get_netcdf4_files(
-    missions: list,
-    start_date: datetime = None,
-    end_date: datetime = None
-    ) -> list[Path]:
+    missions: list, start_date: datetime = None, end_date: datetime = None
+) -> list[Path]:
     """
     Generate a list of NetCDF along-track files based on missions and optional date filtering.
     If start_date and end_date are both None → return ALL files for those missions.
@@ -207,8 +211,9 @@ def get_netcdf4_files(
             invalid_missions.append(mission)
     if invalid_missions:
 
-        raise Exception(f"received invalid arguments {invalid_missions}.  Received missions must be from the following list {oceandb_etl.missions}")
-
+        raise Exception(
+            f"received invalid arguments {invalid_missions}.  Received missions must be from the following list {oceandb_etl.missions}"
+        )
 
     click.echo(f"Ingesting missions: {missions}")
     click.echo(f"N Missions {len(missions)}")
@@ -227,17 +232,17 @@ def get_netcdf4_files(
         year_months = list(iter_year_months(start_date, end_date))
 
     # Collect files
-    #For whatever reason the s6a satellite data directory is different than all the others.
+    # For whatever reason the s6a satellite data directory is different than all the others.
 
     for mission in missions:
         file_structure = f"cmems_obs-sl_glo_phy-ssh_my_{mission}-l3-duacs_PT1S_202411"
-        second_file_structure = f"cmems_obs-sl_glo_phy-ssh_my_{mission}-lr-l3-duacs_PT1S_202411"
+        second_file_structure = (
+            f"cmems_obs-sl_glo_phy-ssh_my_{mission}-lr-l3-duacs_PT1S_202411"
+        )
 
         for structure in [file_structure, second_file_structure]:
             ingest_directory = (
-                    Path(oceandb_etl.config.along_track_data_directory)
-                    / prefix
-                    / structure
+                Path(oceandb_etl.config.along_track_data_directory) / prefix / structure
             )
 
             if not ingest_directory.exists():
@@ -318,11 +323,14 @@ def ingest_along_track(missions, start_date, end_date):
             --end-date 2023-03-31
     """
 
-
     missions = list(missions)
-    nc_files = get_netcdf4_files(missions=missions, start_date=start_date, end_date=end_date)
+    nc_files = get_netcdf4_files(
+        missions=missions, start_date=start_date, end_date=end_date
+    )
 
-    if not click.confirm(f"Ingesting {len(nc_files)} files This may take many hours. Continue?"):
+    if not click.confirm(
+        f"Ingesting {len(nc_files)} files This may take many hours. Continue?"
+    ):
         return
 
     # Query the ingested metadata so that we can skip processing files that have already been processed
@@ -332,15 +340,14 @@ def ingest_along_track(missions, start_date, end_date):
     start_ingest_time = time.perf_counter()
 
     along_track_files = [
-        file
-        for file in nc_files
-        if file.name not in metadata_filenames
+        file for file in nc_files if file.name not in metadata_filenames
     ]
 
     process_count = 6
     with Pool(process_count) as multiprocessing_pool:
-        multiprocessing_pool.map(oceandb_etl.process_along_track_file, along_track_files)
+        multiprocessing_pool.map(
+            oceandb_etl.process_along_track_file, along_track_files
+        )
 
     full_ingest_duration = time.perf_counter() - start_ingest_time
     print(f"Full Ingest Time {full_ingest_duration:.2f} seconds")
-

@@ -1,29 +1,19 @@
 from dataclasses import dataclass
 from dataclasses import asdict
 import netCDF4 as nc
-import pandas as pd
-import psycopg
-import psycopg as pg
-from psycopg import sql
-import glob
-import time
-import os
 import numpy as np
 from OceanDB.OceanDB import OceanDB
-from functools import cached_property
-from typing import List, Tuple, Any, Iterable, Optional, Iterator
-from datetime import datetime, timedelta, timezone
+from typing import Optional
 from pathlib import Path
-from OceanDB.utils.postgres_upsert import upsert_ignore
 
 
 NDArray = np.ndarray
 
 
-
 @dataclass
 class AlongTrackData:
     """Structured container for extracted along-track variables."""
+
     file_name: np.ndarray
     mission: np.ndarray
     time: np.ndarray
@@ -45,6 +35,7 @@ class AlongTrackData:
 @dataclass
 class AlongTrackMetaData:
     """Structured representation of NetCDF global metadata."""
+
     file_name: str
     conventions: Optional[str] = None
     metadata_conventions: Optional[str] = None
@@ -75,7 +66,6 @@ class AlongTrackMetaData:
     def to_dict(self):
         return asdict(self)
 
-
     @classmethod
     def from_netcdf(cls, ds: nc.Dataset, file_name: str) -> "AlongTrackMetaData":
         """Create AlongTrackMetaData from a NetCDF4 dataset."""
@@ -86,7 +76,7 @@ class AlongTrackMetaData:
         def get(attr: str):
             return getattr(ds, attr, None)
 
-        conventions = getattr(ds, 'Conventions', None)
+        conventions = getattr(ds, "Conventions", None)
 
         print(f"CONVENTIONS {conventions}")
         return cls(
@@ -118,9 +108,11 @@ class AlongTrackMetaData:
             title=get("title"),
         )
 
+
 @dataclass
 class EddyData:
     """Structured container for detected eddy observations."""
+
     amplitude: NDArray
     cost_association: NDArray
     effective_area: NDArray
@@ -163,19 +155,41 @@ class EddyData:
                 )
 
 
-
-
 class OceanDBETL(OceanDB):
-    ocean_basin_table_name: str = 'basin'
-    ocean_basins_connections_table_name: str = 'basin_connection'
-    along_track_table_name: str = 'along_track'
-    along_track_metadata_table_name: str = 'along_track_metadata'
-
+    ocean_basin_table_name: str = "basin"
+    ocean_basins_connections_table_name: str = "basin_connection"
+    along_track_table_name: str = "along_track"
+    along_track_metadata_table_name: str = "along_track_metadata"
 
     variable_scale_factor: dict = dict()
     variable_add_offset: dict = dict()
-    missions = ['al', 'alg', 'c2', 'c2n', 'e1g', 'e1', 'e2', 'en', 'enn', 'g2', 'h2a', 'h2b', 'j1g', 'j1', 'j1n', 'j2g',
-                'j2', 'j2n', 'j3', 'j3n', 's3a', 's3b', 's6a', 'tp', 'tpn']
+    missions = [
+        "al",
+        "alg",
+        "c2",
+        "c2n",
+        "e1g",
+        "e1",
+        "e2",
+        "en",
+        "enn",
+        "g2",
+        "h2a",
+        "h2b",
+        "j1g",
+        "j1",
+        "j1n",
+        "j2g",
+        "j2",
+        "j2n",
+        "j3",
+        "j3n",
+        "s3a",
+        "s3b",
+        "s6a",
+        "tp",
+        "tpn",
+    ]
 
     def __init__(self):
         super().__init__()
@@ -183,107 +197,141 @@ class OceanDBETL(OceanDB):
     @staticmethod
     def along_track_variable_metadata():
         along_track_variable_metadata = [
-            {'var_name': 'sla_unfiltered',
-             'comment': 'The sea level anomaly is the sea surface height above mean sea surface height; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[dac]+[ocean_tide]+[internal_tide]-[lwe]; see the product user manual for details',
-             'long_name': 'Sea level anomaly not-filtered not-subsampled with dac, ocean_tide and lwe correction applied',
-             'scale_factor': 0.001,
-             'standard_name': 'sea_surface_height_above_sea_level',
-             'units': 'm',
-             'dtype': 'int16'},
-            {'var_name': 'sla_filtered',
-             'comment': 'The sea level anomaly is the sea surface height above mean sea surface height; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[dac]+[ocean_tide]+[internal_tide]-[lwe]; see the product user manual for details',
-             'long_name': 'Sea level anomaly filtered not-subsampled with dac, ocean_tide and lwe correction applied',
-             'scale_factor': 0.001,
-             'add_offset': 0.,
-             '_FillValue': 32767,
-             'standard_name': 'sea_surface_height_above_sea_level',
-             'units': 'm',
-             'dtype': 'int16'},
-            {'var_name': 'dac',
-             'comment': 'The sla in this file is already corrected for the dac; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[dac]; see the product user manual for details',
-             'long_name': 'Dynamic Atmospheric Correction', 'scale_factor': 0.001, 'standard_name': None,
-             'units': 'm',
-             'dtype': 'int16'},
-            {'var_name': 'time',
-             'comment': '',
-             'long_name': 'Time of measurement',
-             'scale_factor': None,
-             'standard_name': 'time',
-             'units': 'days since 1950-01-01 00:00:00',
-             'calendar': 'gregorian'},
-            {'var_name': 'track',
-             'comment': '',
-             'long_name': 'Track in cycle the measurement belongs to',
-             'scale_factor': None,
-             'standard_name': None,
-             'units': '1\n',
-             'dtype': 'int16'},
-            {'var_name': 'cycle',
-             'comment': '',
-             'long_name': 'Cycle the measurement belongs to',
-             'scale_factor': None,
-             'standard_name': None,
-             'units': '1',
-             'dtype': 'int16'},
-            {'var_name': 'ocean_tide',
-              'comment': 'The sla in this file is already corrected for the ocean_tide; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[ocean_tide]; see the product user manual for details',
-              'long_name': 'Ocean tide model',
-              'scale_factor': 0.001,
-              'standard_name': None,
-              'units': 'm',
-             'dtype': 'int16'},
-            {'var_name': 'internal_tide',
-             'comment': 'The sla in this file is already corrected for the internal_tide; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[internal_tide]; see the product user manual for details',
-             'long_name': 'Internal tide correction',
-             'scale_factor': 0.001,
-             'standard_name': None,
-             'units': 'm',
-             'dtype': 'int16'},
-            {'var_name': 'lwe',
-             'comment': 'The sla in this file is already corrected for the lwe; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]-[lwe]; see the product user manual for details',
-             'long_name': 'Long wavelength error',
-             'scale_factor': 0.001,
-             'standard_name': None,
-             'units': 'm',
-             'dtype': 'int16'},
-            {'var_name': 'mdt',
-             'comment': 'The mean dynamic topography is the sea surface height above geoid; it is used to compute the absolute dynamic tyopography adt=sla+mdt',
-             'long_name': 'Mean dynamic topography',
-             'scale_factor': 0.001,
-             'standard_name': 'sea_surface_height_above_geoid',
-             'units': 'm',
-             'dtype': 'int16'}]
+            {
+                "var_name": "sla_unfiltered",
+                "comment": "The sea level anomaly is the sea surface height above mean sea surface height; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[dac]+[ocean_tide]+[internal_tide]-[lwe]; see the product user manual for details",
+                "long_name": "Sea level anomaly not-filtered not-subsampled with dac, ocean_tide and lwe correction applied",
+                "scale_factor": 0.001,
+                "standard_name": "sea_surface_height_above_sea_level",
+                "units": "m",
+                "dtype": "int16",
+            },
+            {
+                "var_name": "sla_filtered",
+                "comment": "The sea level anomaly is the sea surface height above mean sea surface height; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[dac]+[ocean_tide]+[internal_tide]-[lwe]; see the product user manual for details",
+                "long_name": "Sea level anomaly filtered not-subsampled with dac, ocean_tide and lwe correction applied",
+                "scale_factor": 0.001,
+                "add_offset": 0.0,
+                "_FillValue": 32767,
+                "standard_name": "sea_surface_height_above_sea_level",
+                "units": "m",
+                "dtype": "int16",
+            },
+            {
+                "var_name": "dac",
+                "comment": "The sla in this file is already corrected for the dac; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[dac]; see the product user manual for details",
+                "long_name": "Dynamic Atmospheric Correction",
+                "scale_factor": 0.001,
+                "standard_name": None,
+                "units": "m",
+                "dtype": "int16",
+            },
+            {
+                "var_name": "time",
+                "comment": "",
+                "long_name": "Time of measurement",
+                "scale_factor": None,
+                "standard_name": "time",
+                "units": "days since 1950-01-01 00:00:00",
+                "calendar": "gregorian",
+            },
+            {
+                "var_name": "track",
+                "comment": "",
+                "long_name": "Track in cycle the measurement belongs to",
+                "scale_factor": None,
+                "standard_name": None,
+                "units": "1\n",
+                "dtype": "int16",
+            },
+            {
+                "var_name": "cycle",
+                "comment": "",
+                "long_name": "Cycle the measurement belongs to",
+                "scale_factor": None,
+                "standard_name": None,
+                "units": "1",
+                "dtype": "int16",
+            },
+            {
+                "var_name": "ocean_tide",
+                "comment": "The sla in this file is already corrected for the ocean_tide; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[ocean_tide]; see the product user manual for details",
+                "long_name": "Ocean tide model",
+                "scale_factor": 0.001,
+                "standard_name": None,
+                "units": "m",
+                "dtype": "int16",
+            },
+            {
+                "var_name": "internal_tide",
+                "comment": "The sla in this file is already corrected for the internal_tide; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]+[internal_tide]; see the product user manual for details",
+                "long_name": "Internal tide correction",
+                "scale_factor": 0.001,
+                "standard_name": None,
+                "units": "m",
+                "dtype": "int16",
+            },
+            {
+                "var_name": "lwe",
+                "comment": "The sla in this file is already corrected for the lwe; the uncorrected sla can be computed as follows: [uncorrected sla]=[sla from product]-[lwe]; see the product user manual for details",
+                "long_name": "Long wavelength error",
+                "scale_factor": 0.001,
+                "standard_name": None,
+                "units": "m",
+                "dtype": "int16",
+            },
+            {
+                "var_name": "mdt",
+                "comment": "The mean dynamic topography is the sea surface height above geoid; it is used to compute the absolute dynamic tyopography adt=sla+mdt",
+                "long_name": "Mean dynamic topography",
+                "scale_factor": 0.001,
+                "standard_name": "sea_surface_height_above_geoid",
+                "units": "m",
+                "dtype": "int16",
+            },
+        ]
         return along_track_variable_metadata
 
     def load_netcdf(self, file: Path) -> nc.Dataset:
-        ds = nc.Dataset(file, 'r')
+        ds = nc.Dataset(file, "r")
         return ds
 
-    def extract_dataset_metadata(self, ds: nc.Dataset, file: Path) -> AlongTrackMetaData:
+    def extract_dataset_metadata(
+        self, ds: nc.Dataset, file: Path
+    ) -> AlongTrackMetaData:
         return AlongTrackMetaData.from_netcdf(ds, file_name=file.name)
 
     def extract_data_from_netcdf(self, ds: nc.Dataset, file: Path) -> AlongTrackData:
         """
         Parse & transform NetCDF file
         """
-        mission = file.name.split('_')[2]
+        mission = file.name.split("_")[2]
         try:
-            ds.variables['sla_unfiltered'].set_auto_scale(False)
-            ds.variables['sla_filtered'].set_auto_scale(False)
-            ds.variables['ocean_tide'].set_auto_scale(False)
-            ds.variables['internal_tide'].set_auto_scale(False)
-            ds.variables['lwe'].set_auto_scale(False)
-            ds.variables['mdt'].set_auto_scale(False)
-            ds.variables['dac'].set_auto_scale(False)
-            ds.variables['tpa_correction'].set_auto_scale(False)
+            ds.variables["sla_unfiltered"].set_auto_scale(False)
+            ds.variables["sla_filtered"].set_auto_scale(False)
+            ds.variables["ocean_tide"].set_auto_scale(False)
+            ds.variables["internal_tide"].set_auto_scale(False)
+            ds.variables["lwe"].set_auto_scale(False)
+            ds.variables["mdt"].set_auto_scale(False)
+            ds.variables["dac"].set_auto_scale(False)
+            ds.variables["tpa_correction"].set_auto_scale(False)
 
-            time_data = ds.variables['time']  # Extract dates from the dataset and convert them to standard datetime
-            time_data = nc.num2date(time_data[:], time_data.units, only_use_cftime_datetimes=False,
-                                    only_use_python_datetimes=False)
-            time_data = nc.date2num(time_data[:],
-                                    "microseconds since 2000-01-01 00:00:00")  # Convert the standard date back to the 8-byte integer PSQL uses
+            time_data = ds.variables[
+                "time"
+            ]  # Extract dates from the dataset and convert them to standard datetime
+            time_data = nc.num2date(
+                time_data[:],
+                time_data.units,
+                only_use_cftime_datetimes=False,
+                only_use_python_datetimes=False,
+            )
+            time_data = nc.date2num(
+                time_data[:], "microseconds since 2000-01-01 00:00:00"
+            )  # Convert the standard date back to the 8-byte integer PSQL uses
 
-            basin_id = self.basin_mask(ds.variables['latitude'][:], ds.variables['longitude'][:])
+            basin_id = self.basin_mask(
+                ds.variables["latitude"][:], ds.variables["longitude"][:]
+            )
 
             data = AlongTrackData(
                 time=time_data,
@@ -301,13 +349,10 @@ class OceanDBETL(OceanDB):
                 tpa_correction=ds.variables["tpa_correction"][:],
                 basin_id=basin_id,
                 mission=mission,
-                file_name=file.name
+                file_name=file.name,
             )
             ds.close()
             return data
 
         except Exception as ex:
             print(ex)
-
-
-

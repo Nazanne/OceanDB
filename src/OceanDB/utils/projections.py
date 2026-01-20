@@ -3,11 +3,11 @@ import numpy.typing as npt
 
 
 def latitude_longitude_bounds_for_transverse_mercator_box(
-        lat0: float|npt.NDArray[np.floating],
-        lon0: float|npt.NDArray[np.floating],
-        Lx: float,
-        Ly: float
-    ):
+    lat0: float | npt.NDArray[np.floating],
+    lon0: float | npt.NDArray[np.floating],
+    Lx: float,
+    Ly: float,
+):
     """
     Given a bounding box in projected coordinates
     (in the transverse Mercator projection centered around lon0),
@@ -34,7 +34,9 @@ def latitude_longitude_bounds_for_transverse_mercator_box(
         #. maximum longitude of the bounding box
 
     """
-    [x0, y0] = latitude_longitude_to_spherical_transverse_mercator(lat0, lon0, lon0=lon0)
+    [x0, y0] = latitude_longitude_to_spherical_transverse_mercator(
+        lat0, lon0, lon0=lon0
+    )
     x = np.zeros(6)
     y = np.zeros(6)
 
@@ -66,10 +68,10 @@ def latitude_longitude_bounds_for_transverse_mercator_box(
 
 
 def latitude_longitude_to_spherical_transverse_mercator(
-        lat: float|npt.NDArray[np.floating],
-        lon: float|npt.NDArray[np.floating],
-        lon0: float|npt.NDArray[np.floating]
-    ):
+    lat: float | npt.NDArray[np.floating],
+    lon: float | npt.NDArray[np.floating],
+    lon0: float | npt.NDArray[np.floating],
+):
     """
     Project a lat/lon to x/y in the transverse Mercator projection centered around `lon0`.
 
@@ -84,7 +86,7 @@ def latitude_longitude_to_spherical_transverse_mercator(
 
     """
     k0 = 0.9996
-    WGS84a = 6378137.
+    WGS84a = 6378137.0
     R = k0 * WGS84a
     phi = np.array(lat) * np.pi / 180
     deltaLambda = (np.array(lon) - np.array(lon0)) * np.pi / 180
@@ -95,13 +97,11 @@ def latitude_longitude_to_spherical_transverse_mercator(
 
 
 def spherical_transverse_mercator_to_latitude_longitude(
-        x: float|npt.NDArray[np.floating],
-        y: float|npt.NDArray[np.floating],
-        lon0: float|npt.NDArray[np.floating]
-    ):
-    """
-
-    """
+    x: float | npt.NDArray[np.floating],
+    y: float | npt.NDArray[np.floating],
+    lon0: float | npt.NDArray[np.floating],
+):
+    """ """
     k0 = 0.9996
     WGS84a = 6378137
     R = k0 * WGS84a

@@ -6,10 +6,10 @@ from sqlalchemy.dialects.postgresql import insert
 
 
 def upsert_ignore(
-        table: Table,
-        conn: Connection,
-        keys: List[str],
-        data_iter: Iterable[Tuple[Any, ...]],
+    table: Table,
+    conn: Connection,
+    keys: List[str],
+    data_iter: Iterable[Tuple[Any, ...]],
 ) -> None:
     """
     In practice it should never happen but in development it might be the case that we attempt to insert duplicate rows.
@@ -38,6 +38,6 @@ def upsert_ignore(
     data = [dict(zip(keys, row)) for row in data_iter]
     stmt = insert(table.table).values(data)
     stmt = stmt.on_conflict_do_nothing(
-        index_elements=['date_time', 'latitude', 'longitude']  # your unique columns
+        index_elements=["date_time", "latitude", "longitude"]  # your unique columns
     )
     conn.execute(stmt)

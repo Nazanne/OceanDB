@@ -14,10 +14,8 @@ data = along_track.geographic_nearest_neighbors_dt(
     latitudes=np.array([latitude]),
     longitudes=np.array([longitude]),
     dates=[date],
-    missions=['al']
+    missions=["al"],
 )
 
 for d in data:
     print(d)
-
-

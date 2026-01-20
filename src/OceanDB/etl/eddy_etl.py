@@ -1,23 +1,14 @@
 from dataclasses import dataclass
-from dataclasses import asdict
 import netCDF4 as nc
-import pandas as pd
-import psycopg
 import psycopg as pg
 from psycopg import sql
-import glob
 import time
-import os
 import numpy as np
-from OceanDB.OceanDB import OceanDB
-from functools import cached_property
-from typing import List, Tuple, Any, Iterable, Optional, Iterator
+from typing import Iterator
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from OceanDB.etl import BaseETL
-from OceanDB.utils.postgres_upsert import upsert_ignore
-
 
 NDArray = np.ndarray
 
@@ -25,6 +16,7 @@ NDArray = np.ndarray
 @dataclass
 class EddyData:
     """Structured container for detected eddy observations."""
+
     amplitude: NDArray
     cost_association: NDArray
     effective_area: NDArray
@@ -66,27 +58,30 @@ class EddyData:
                     f"EddyData field '{name}' has length {len(value)} != {n}"
                 )
 
+
 class EddyETL(BaseETL):
     def __init__(self):
         super().__init__()
 
-    def ingest_eddy_data_file(self,
-                              file: Path,
-                              cyclonic_type):
+    def ingest_eddy_data_file(self, file: Path, cyclonic_type):
         """
         Processes & Ingests Eddy Data NetCDF file
         """
         dataset = self.load_netcdf(file)
-        for eddy_data in self.extract_eddy_data_batches_from_netcdf(dataset, batch_size=500000):
+        for eddy_data in self.extract_eddy_data_batches_from_netcdf(
+            dataset, batch_size=500000
+        ):
             start = time.perf_counter()
-            self.import_eddy_data_to_postgresql(eddy_data=eddy_data, cyclonic_type=cyclonic_type)
+            self.import_eddy_data_to_postgresql(
+                eddy_data=eddy_data, cyclonic_type=cyclonic_type
+            )
             duration = time.perf_counter() - start
             print(f"✅ Ingested Eddy Data Points took {duration:.2f} seconds")
 
     def extract_eddy_data_batches_from_netcdf(
-            self,
-            ds: nc.Dataset,
-            batch_size: int,
+        self,
+        ds: nc.Dataset,
+        batch_size: int,
     ) -> Iterator[EddyData]:
         """
         Yield batches of eddy data from a NetCDF dataset.
@@ -124,19 +119,22 @@ class EddyETL(BaseETL):
 
             # ---- Time parsing (critical fix) ----
             raw_time = time_var[sl].astype("int64")
-            date_time = [
-                epoch + timedelta(seconds=int(t))
-                for t in raw_time
-            ]
+            date_time = [epoch + timedelta(seconds=int(t)) for t in raw_time]
 
             yield EddyData(
                 amplitude=ds.variables["amplitude"][sl],
                 cost_association=ds.variables["cost_association"][sl],
                 effective_area=ds.variables["effective_area"][sl],
                 effective_contour_height=ds.variables["effective_contour_height"][sl],
-                effective_contour_latitude=ds.variables["effective_contour_latitude"][sl],
-                effective_contour_longitude=ds.variables["effective_contour_longitude"][sl],
-                effective_contour_shape_error=ds.variables["effective_contour_shape_error"][sl],
+                effective_contour_latitude=ds.variables["effective_contour_latitude"][
+                    sl
+                ],
+                effective_contour_longitude=ds.variables["effective_contour_longitude"][
+                    sl
+                ],
+                effective_contour_shape_error=ds.variables[
+                    "effective_contour_shape_error"
+                ][sl],
                 effective_radius=ds.variables["effective_radius"][sl],
                 inner_contour_height=ds.variables["inner_contour_height"][sl],
                 latitude=ds.variables["latitude"][sl],
@@ -159,11 +157,7 @@ class EddyETL(BaseETL):
                 track=ds.variables["track"][sl],
             )
 
-    def import_eddy_data_to_postgresql(
-            self,
-            eddy_data: EddyData,
-            cyclonic_type: int
-    ):
+    def import_eddy_data_to_postgresql(self, eddy_data: EddyData, cyclonic_type: int):
         """
         Insert eddy records into PostgreSQL using INSERT statements.
 
@@ -229,32 +223,36 @@ class EddyETL(BaseETL):
 
         rows = []
         for i in range(n_observations):
-            rows.append([
-                normalize_value(eddy_data.amplitude[i]),
-                normalize_value(eddy_data.cost_association[i]),
-                normalize_value(eddy_data.effective_area[i]),
-                normalize_value(eddy_data.effective_contour_height[i]),
-                normalize_value(eddy_data.effective_contour_shape_error[i]),
-                normalize_value(eddy_data.effective_radius[i]),
-                normalize_value(eddy_data.inner_contour_height[i]),
-                normalize_value(eddy_data.latitude[i]),
-                normalize_value(eddy_data.latitude_max[i]),
-                normalize_value(eddy_data.longitude[i]),
-                normalize_value(eddy_data.longitude_max[i]),
-                normalize_value(eddy_data.num_contours[i]),
-                normalize_value(eddy_data.num_point_e[i]),
-                normalize_value(eddy_data.num_point_s[i]),
-                bool(eddy_data.observation_flag[i]),  # already normalized, but explicit is OK
-                normalize_value(eddy_data.observation_number[i]),
-                normalize_value(eddy_data.speed_area[i]),
-                normalize_value(eddy_data.speed_average[i]),
-                normalize_value(eddy_data.speed_contour_height[i]),
-                normalize_value(eddy_data.speed_contour_shape_error[i]),
-                normalize_value(eddy_data.speed_radius[i]),
-                normalize_value(eddy_data.date_time[i]),
-                normalize_value(eddy_data.track[i]),
-                cyclonic_type,
-            ])
+            rows.append(
+                [
+                    normalize_value(eddy_data.amplitude[i]),
+                    normalize_value(eddy_data.cost_association[i]),
+                    normalize_value(eddy_data.effective_area[i]),
+                    normalize_value(eddy_data.effective_contour_height[i]),
+                    normalize_value(eddy_data.effective_contour_shape_error[i]),
+                    normalize_value(eddy_data.effective_radius[i]),
+                    normalize_value(eddy_data.inner_contour_height[i]),
+                    normalize_value(eddy_data.latitude[i]),
+                    normalize_value(eddy_data.latitude_max[i]),
+                    normalize_value(eddy_data.longitude[i]),
+                    normalize_value(eddy_data.longitude_max[i]),
+                    normalize_value(eddy_data.num_contours[i]),
+                    normalize_value(eddy_data.num_point_e[i]),
+                    normalize_value(eddy_data.num_point_s[i]),
+                    bool(
+                        eddy_data.observation_flag[i]
+                    ),  # already normalized, but explicit is OK
+                    normalize_value(eddy_data.observation_number[i]),
+                    normalize_value(eddy_data.speed_area[i]),
+                    normalize_value(eddy_data.speed_average[i]),
+                    normalize_value(eddy_data.speed_contour_height[i]),
+                    normalize_value(eddy_data.speed_contour_shape_error[i]),
+                    normalize_value(eddy_data.speed_radius[i]),
+                    normalize_value(eddy_data.date_time[i]),
+                    normalize_value(eddy_data.track[i]),
+                    cyclonic_type,
+                ]
+            )
 
         try:
             with pg.connect(self.config.postgres_dsn) as conn:
