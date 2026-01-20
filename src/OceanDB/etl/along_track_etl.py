@@ -116,7 +116,7 @@ class AlongTrackMetaData:
         )
 
 
-class AlongTrackEtl(BaseETL):
+class AlongTrackETL(BaseETL):
     ocean_basin_table_name: str = 'basin'
     ocean_basins_connections_table_name: str = 'basin_connection'
     along_track_table_name: str = 'along_track'

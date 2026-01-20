@@ -2,11 +2,12 @@ from datetime import datetime
 import click
 from pathlib import Path
 from multiprocessing import Pool, cpu_count
+import time
 
 from OceanDB.OceanDB_Initializer import OceanDBInit
 from OceanDB.config import Config
 from OceanDB.utils.logging import get_logger
-import time
+from OceanDB.etl import BaseETL, EddyETL, AlongTrackETL, OceanDBCopernicusMarine
 
 logger = get_logger()
 
@@ -28,7 +29,7 @@ def init():
     ocean_db_init.create_indices()
     ocean_db_init.create_partitions("1990-01-01", "2025-11-01")
     # ocean_db_init.validate_schema()
-    oceandb_etl = OceanDBETL()
+    oceandb_etl = BaseETL()
     oceandb_etl.insert_basins_data()
     oceandb_etl.insert_basin_connections_data()
 
@@ -68,7 +69,7 @@ def ingest_eddy():
     - Inserts use strict PostgreSQL typing (INSERT, not COPY).
     - Intended to be run once per database or during reinitialization.
     """
-    oceandb_etl = OceanDBETL()
+    oceandb_etl = EddyETL()
     eddy_directory = oceandb_etl.config.eddy_data_directory
 
     print("Processing Ingesting META3.2_DT_allsat_Cyclonic_long_19930101_20220209.nc")
@@ -118,7 +119,7 @@ def download():
             click.echo("Download canceled.")
             return
 
-    from OceanDB.OceanDB_Copernicus import OceanDBCopernicusMarine
+
     oceandb_cm = OceanDBCopernicusMarine()
     # click.echo("\n⬇️  Starting download... (this may take hours)")
     #
@@ -190,7 +191,7 @@ def get_netcdf4_files(
     If start_date and end_date are both None → return ALL files for those missions.
     """
 
-    oceandb_etl = OceanDBETL()
+    oceandb_etl = AlongTrackETL()
     missions = list(missions)
 
     # -----------------------
@@ -325,7 +326,7 @@ def ingest_along_track(missions, start_date, end_date):
         return
 
     # Query the ingested metadata so that we can skip processing files that have already been processed
-    oceandb_etl = OceanDBETL()
+    oceandb_etl = AlongTrackETL()
     metadata_filenames = oceandb_etl.query_metadata()
 
     start_ingest_time = time.perf_counter()
@@ -340,40 +341,6 @@ def ingest_along_track(missions, start_date, end_date):
     with Pool(process_count) as multiprocessing_pool:
         multiprocessing_pool.map(oceandb_etl.process_along_track_file, along_track_files)
 
-    # for file in along_track_files:
-    #     file_name = file.name
-    #     if file_name in metadata_filenames:
-    #         print(f"{file_name} already processed, skipping")
-    #         continue
-    #
-    #     print(f"Processing {file_name}")
-    #     start = time.perf_counter()
-    #
-    #     oceandb_etl.process_along_track_file(file=file)
-    #
-    #     size_mb = file.stat().st_size / (1024 * 1024)
-    #     duration = time.perf_counter() - start
-    #     print(f"✅ {file.name} | {size_mb:.2f} MB | {duration:.2f} seconds")
-
-
     full_ingest_duration = time.perf_counter() - start_ingest_time
     print(f"Full Ingest Time {full_ingest_duration:.2f} seconds")
 
-
-    #
-    #
-    #
-    #     print(f"Processing {file_name}")
-    #     start = time.perf_counter()
-    #
-    #     oceandb_etl.process_along_track_file(file=file)
-    #
-    #
-    #     # along_track_data, along_track_metadata = oceandb_etl.extract_along_track_file(file=file)
-    #     # oceandb_etl.ingest_along_track_file( along_track_data=along_track_data, along_track_metadata=along_track_metadata)
-    #
-    #     size_mb = file.stat().st_size / (1024 * 1024)
-    #     duration = time.perf_counter() - start
-    #     print(f"✅ {file.name} | {size_mb:.2f} MB | {duration:.2f} seconds")
-    #
-    #
