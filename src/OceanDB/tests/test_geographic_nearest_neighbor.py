@@ -1,7 +1,7 @@
 from datetime import datetime
 import numpy as np
 
-from OceanDB.AlongTrack import AlongTrack
+from OceanDB.data_access import AlongTrack
 
 along_track = AlongTrack()
 

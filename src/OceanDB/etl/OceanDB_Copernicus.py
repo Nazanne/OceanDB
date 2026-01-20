@@ -1,6 +1,7 @@
 import os
 import copernicusmarine
-from OceanDB.config1 import Config
+from OceanDB.config import Config
+
 
 class OceanDBCopernicusMarine:
     def __init__(self):

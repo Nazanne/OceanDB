@@ -1,9 +1,9 @@
 import os
 import copernicusmarine
-from OceanDB.config1 import Config
+from OceanDB.config import Config
+
 config = Config()
 copernicusmarine.login(username=os.getenv('COPERNICUS_USERNAME'), password=os.getenv('COPERNICUS_PASSWORD'))
-
 
 
 def build_copernicus_datasets():

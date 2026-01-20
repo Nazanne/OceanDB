@@ -3,13 +3,9 @@ import click
 from pathlib import Path
 from multiprocessing import Pool, cpu_count
 
-from OceanDB.OceanDB_ETL import OceanDBETL
 from OceanDB.OceanDB_Initializer import OceanDBInit
 from OceanDB.config import Config
 from OceanDB.utils.logging import get_logger
-
-
-import netCDF4 as nc
 import time
 
 logger = get_logger()

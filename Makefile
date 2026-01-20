@@ -23,3 +23,13 @@ build_image:
 
 psql:
 	docker exec -it postgres psql -h localhost -p 5432 -U postgres -d ocean
+
+.PHONY: format lint check
+
+format:
+	black src/OceanDB
+
+lint:
+	flake8 src/OceanDB
+
+check: format lint
