@@ -1,9 +1,8 @@
 import numpy as np
 from datetime import datetime
 from OceanDB.data_access.along_track import AlongTrack
-from OceanDB.ocean_data.ocean_data import OceanData
-along_track = AlongTrack()
 
+along_track = AlongTrack()
 
 """
 TEST single point spatiotemporal query
@@ -21,3 +20,12 @@ sla_geographic = list(sla_geographic)
 output_data = sla_geographic[0]
 along_track_data = output_data['along_track']
 
+nearest_neighbor_ocean_data = along_track.geographic_nearest_neighbors_dt(
+    latitudes=np.array([latitude]),
+    longitudes=np.array([longitude]),
+    dates=[date],
+    missions=["al"],
+)
+nn_ocean_data_list = list(nearest_neighbor_ocean_data)
+nearest_neighbor_along_track_data = nn_ocean_data_list[0]
+nn_data = nearest_neighbor_along_track_data['along_track']

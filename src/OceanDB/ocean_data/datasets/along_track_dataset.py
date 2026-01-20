@@ -25,11 +25,10 @@ class AlongTrackDataset(Dataset[AlongTrackRadiusFields]):
 
     @classmethod
     def from_rows(cls, rows, *, variable_scale_factor=None):
+        scale = {}
         return OceanDataFactory.from_rows(
             rows=rows,
             name=cls.name,
             fields=cls.schema,
-            scale={
-                "sla_filtered": variable_scale_factor.get("sla_filtered").get("scale")
-            },
+            scale=scale
         )

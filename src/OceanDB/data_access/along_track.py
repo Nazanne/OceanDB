@@ -42,18 +42,18 @@ class AlongTrack(BaseQuery):
         super().__init__()
 
 
-    def _build_along_track_dataset(
-            self,
-            rows,
-    ) -> OceanData[AlongTrackDataset]:
-        ocean_data = OceanData()
-        ocean_data.add(
-            AlongTrackDataset.from_rows(
-                rows,
-                variable_scale_factor=self.METADATA['along_track'],
-            )
-        )
-        return ocean_data
+    # def _build_along_track_dataset(
+    #         self,
+    #         rows,
+    # ) -> OceanData[AlongTrackDataset]:
+    #     ocean_data = OceanData()
+    #     ocean_data.add(
+    #         AlongTrackDataset.from_rows(
+    #             rows,
+    #             variable_scale_factor=self.METADATA['along_track'],
+    #         )
+    #     )
+    #     return ocean_data
 
 
     def geographic_nearest_neighbors_dt(
@@ -97,8 +97,12 @@ class AlongTrack(BaseQuery):
                     if not rows:
                         yield None
                     else:
-                        data =  self._build_along_track_dataset(rows)
-                        yield data
+                        along_track_ds = self.build_dataset(
+                            dataset_cls=AlongTrackDataset,
+                            rows=rows,
+                            domain=self.ALONG_TRACK_DOMAIN,
+                        )
+                        yield self.build_ocean_data(along_track_ds)
                     if not cursor.nextset():
                         break
 
@@ -154,7 +158,12 @@ class AlongTrack(BaseQuery):
                     if not rows:
                         yield None
                     else:
-                        yield self._build_along_track_dataset(rows)
+                        along_track_ds = self.build_dataset(
+                            dataset_cls=AlongTrackDataset,
+                            rows=rows,
+                            domain=self.ALONG_TRACK_DOMAIN,
+                        )
+                        yield self.build_ocean_data(along_track_ds)
 
                     if not cur.nextset():
                         break
