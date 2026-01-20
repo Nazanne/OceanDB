@@ -154,12 +154,13 @@ class AlongTrack(OceanDB):
         },
     }
 
-
     def __init__(self):
         super().__init__()
 
-
-    def _build_along_track_dataset(self, rows) -> OceanData:
+    def _build_along_track_dataset(
+            self,
+            rows,
+    ) -> OceanData[AlongTrackDataset]:
         ocean_data = OceanData()
         ocean_data.add(
             AlongTrackDataset.from_rows(
@@ -177,7 +178,7 @@ class AlongTrack(OceanDB):
             radii: List[float] | float = 500_000.0,
             time_window: timedelta = timedelta(days=10),
             missions: list[str] | None = None,
-    ) -> Iterable[OceanData | None]:
+    ) -> Iterable[OceanData[AlongTrackDataset] | None]:
         """
         Query along-track points within spatial + temporal windows.
 

@@ -19,3 +19,5 @@ sla_geographic = along_track.geographic_points_in_r_dt(
 
 sla_geographic = list(sla_geographic)
 output_data = sla_geographic[0]
+output_data['along_track']
+

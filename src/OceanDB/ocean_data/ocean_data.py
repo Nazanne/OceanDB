@@ -1,37 +1,38 @@
-from __future__ import annotations
-
-from typing import Any, Mapping, Sequence, TypeVar
+from typing import Generic, TypeVar, Union, Mapping, Any, Sequence
 import numpy as np
 import numpy.typing as npt
 import netCDF4 as nc
 
 from OceanDB.ocean_data.netcdf import write_dataset_to_group
 
+
 F = TypeVar("F", bound=str)
+D = TypeVar("D", bound="Dataset[Any]")
 
 FloatArray = npt.NDArray[np.floating]
+
 Row = Mapping[str, Any]
 
-class OceanData:
+class OceanData(Generic[D]):
     """
     Container for multiple datasets that together form
     one logical OceanDB query result.
     """
 
     def __init__(self):
-        self._datasets: dict[str, Any] = {}
+        self._datasets: dict[str, D] = {}
 
-    def add(self, dataset) -> None:
+    def add(self, dataset: D) -> None:
         if dataset.name in self._datasets:
             raise KeyError(f"Dataset '{dataset.name}' already exists")
 
         self._datasets[dataset.name] = dataset
 
-    def get(self, name: str):
+    def get(self, name: str) -> D:
         return self._datasets[name]
 
-    def datasets(self):
-        return self._datasets.values()
+    def datasets(self) -> Mapping[str, D]:
+        return self._datasets
 
     def to_netcdf(self, path: str) -> None:
         """
@@ -40,7 +41,6 @@ class OceanData:
         Each contained Dataset becomes a NetCDF group with the dataset's name.
         """
         with nc.Dataset(path, "w", format="NETCDF4") as root:
-            # Optional: global attrs (nice for provenance)
             root.Conventions = "CF-1.9"
             root.source = "OceanDB"
 
@@ -48,21 +48,16 @@ class OceanData:
                 grp = root.createGroup(name)
                 write_dataset_to_group(grp, dataset, dim_name="obs")
 
-
     def __len__(self) -> int:
-        """Number of datasets contained."""
         return len(self._datasets)
 
     def __iter__(self):
-        """Iterate over dataset names."""
         return iter(self._datasets)
 
     def __contains__(self, name: str) -> bool:
-        """`'along_track' in ocean_data`"""
         return name in self._datasets
 
-    def __getitem__(self, name: str):
-        """`ocean_data['along_track']`"""
+    def __getitem__(self, name: str) -> D:
         return self._datasets[name]
 
     def __repr__(self) -> str:
