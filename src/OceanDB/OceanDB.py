@@ -1,21 +1,19 @@
 from functools import cached_property
 import netCDF4 as nc
 from psycopg import sql
-import os
-import yaml
+import psycopg as pg
+from psycopg.rows import dict_row
 from importlib import resources
 import time
 import pandas as pd
 from typing import IO
-import psycopg as pg
-from psycopg.rows import dict_row
 from typing import Any, List, Dict, Optional
 import numpy as np
-from OceanDB.config import Config
-
 from sqlalchemy import create_engine
 
+from OceanDB.config import Config
 from OceanDB.utils.logging import get_logger
+
 
 class OceanDB:
     """
@@ -23,9 +21,10 @@ class OceanDB:
 
     This class expects a .env file at the project root with database credentials.  See instructions in the README
     """
+
     def __init__(
         self,
-        ):
+    ):
 
         self.config = Config()
         self.connection_string = self.config.postgres_dsn
@@ -39,9 +38,9 @@ class OceanDB:
         self.data_pkg = "OceanDB.data"
         self.logger = get_logger()
 
-
-
-    def load_module_file(self, module: str, filename: str, encoding="utf-8", mode="rb") -> IO:
+    def load_module_file(
+        self, module: str, filename: str, encoding="utf-8", mode="rb"
+    ) -> IO:
         """
         Open a resource file bundled within a Python package.
 
@@ -59,10 +58,9 @@ class OceanDB:
         """
         Load the contents of a SQL file
         """
-        with self.load_module_file(module="OceanDB.sql",
-                                   filename=filename,
-                                   mode="r",
-                                   encoding="utf-8") as f:
+        with self.load_module_file(
+            module="OceanDB.sql", filename=filename, mode="r", encoding="utf-8"
+        ) as f:
             query = f.read()
             return query
 
@@ -105,9 +103,9 @@ class OceanDB:
     def execute_query(self, table, query):
         try:
             with pg.connect(self.connection_string) as conn:
-                 with conn.cursor() as cur:
-                     cur.execute(query)
-                     conn.commit()
+                with conn.cursor() as cur:
+                    cur.execute(query)
+                    conn.commit()
         except Exception as ex:
             self.logger.info(f"Error executing {table}")
             self.logger.info(f"Error while Executing Query {ex}")
@@ -134,12 +132,19 @@ class OceanDB:
         end = time.time()
         print(f"Finished. Total time: {end - start}")
 
-
     def drop_database(self):
-        with pg.connect(f'host={self.host} port={self.port} user={self.username} password={self.password}') as conn:
-            conn.autocommit = True  # Enable autocommit to execute CREATE DATABASE command
+        with pg.connect(
+            f"host={self.host} port={self.port} user={self.username} password={self.password}"
+        ) as conn:
+            conn.autocommit = (
+                True  # Enable autocommit to execute CREATE DATABASE command
+            )
             with conn.cursor() as cur:
-                cur.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(self.db_name)))
+                cur.execute(
+                    sql.SQL("DROP DATABASE {} WITH (FORCE)").format(
+                        sql.Identifier(self.db_name)
+                    )
+                )
 
         print(f"Database '{self.db_name}' dropped.")
 
@@ -176,24 +181,41 @@ class OceanDB:
         # need to override it.
 
         # encoding_keys = ['dtype', 'scale_factor', 'add_offset', '_FillValue']
-        encoding_keys = ['dtype']
-        disallowed_time_keys = ['dtype', 'units', 'calendar', 'scale_factor', 'add_offset']
+        encoding_keys = ["dtype"]
+        disallowed_time_keys = [
+            "dtype",
+            "units",
+            "calendar",
+            "scale_factor",
+            "add_offset",
+        ]
 
         xrdata = df.to_xarray()
         for record in row_metadata:
-            if record['var_name'] in header_array:
+            if record["var_name"] in header_array:
                 # Remove empty items from dictionary. Xarray will throw an error is an item is None
-                if 'time' in record['var_name']:
-                    xrdata[record['var_name']].attrs = {k: v for k, v in record.items() if
-                                                        v is not None and k not in disallowed_time_keys}
-                    xrdata[record['var_name']].encoding['dtype'] = 'float64'
-                    xrdata[record['var_name']].encoding['units'] = 'days since 1950-01-01 00:00:00'
-                    xrdata[record['var_name']].encoding['calendar'] = 'gregorian'
+                if "time" in record["var_name"]:
+                    xrdata[record["var_name"]].attrs = {
+                        k: v
+                        for k, v in record.items()
+                        if v is not None and k not in disallowed_time_keys
+                    }
+                    xrdata[record["var_name"]].encoding["dtype"] = "float64"
+                    xrdata[record["var_name"]].encoding[
+                        "units"
+                    ] = "days since 1950-01-01 00:00:00"
+                    xrdata[record["var_name"]].encoding["calendar"] = "gregorian"
                 else:
-                    xrdata[record['var_name']].attrs = {k: v for k, v in record.items() if
-                                                  v is not None and k not in encoding_keys}
-                    encodings[record['var_name']] = {k: v for k, v in record.items() if
-                                                     v is not None and k in encoding_keys}
+                    xrdata[record["var_name"]].attrs = {
+                        k: v
+                        for k, v in record.items()
+                        if v is not None and k not in encoding_keys
+                    }
+                    encodings[record["var_name"]] = {
+                        k: v
+                        for k, v in record.items()
+                        if v is not None and k in encoding_keys
+                    }
         return xrdata, encodings
 
     @cached_property
@@ -203,13 +225,14 @@ class OceanDB:
         Returns the 'basinmask' variable as a NumPy array.
         """
         # Open resource file via importlib.resources
-        with self.load_module_file("OceanDB.data", "basin_masks/new_basin_mask.nc", mode="rb") as f:
+        with self.load_module_file(
+            "OceanDB.data", "basin_masks/new_basin_mask.nc", mode="rb"
+        ) as f:
             ds = nc.Dataset("inmemory.nc", memory=f.read())  # load from memory buffer
             ds.set_auto_mask(False)
             basin_mask = ds.variables["basinmask"][:]
             ds.close()
             return basin_mask
-
 
     def basin_mask(self, latitude, longitude):
         """
@@ -226,7 +249,9 @@ class OceanDB:
     def basin_connection_map(self) -> dict:
         with pg.connect(self.connection_string) as connection:
             with connection.cursor() as cursor:
-                cursor.execute("""SELECT DISTINCT basin_id FROM basin_connections ORDER BY basin_id""")
+                cursor.execute(
+                    """SELECT DISTINCT basin_id FROM basin_connections ORDER BY basin_id"""
+                )
                 unique_ids = cursor.fetchall()
 
         uid = [data_i[0] for data_i in unique_ids]
@@ -267,22 +292,39 @@ class OceanDB:
         # need to override it.
 
         # encoding_keys = ['dtype', 'scale_factor', 'add_offset', '_FillValue']
-        encoding_keys = ['dtype']
-        disallowed_time_keys = ['dtype', 'units', 'calendar', 'scale_factor', 'add_offset']
+        encoding_keys = ["dtype"]
+        disallowed_time_keys = [
+            "dtype",
+            "units",
+            "calendar",
+            "scale_factor",
+            "add_offset",
+        ]
 
         xrdata = df.to_xarray()
         for record in row_metadata:
-            if record['var_name'] in header_array:
+            if record["var_name"] in header_array:
                 # Remove empty items from dictionary. Xarray will throw an error is an item is None
-                if 'time' in record['var_name']:
-                    xrdata[record['var_name']].attrs = {k: v for k, v in record.items() if
-                                                        v is not None and k not in disallowed_time_keys}
-                    xrdata[record['var_name']].encoding['dtype'] = 'float64'
-                    xrdata[record['var_name']].encoding['units'] = 'days since 1950-01-01 00:00:00'
-                    xrdata[record['var_name']].encoding['calendar'] = 'gregorian'
+                if "time" in record["var_name"]:
+                    xrdata[record["var_name"]].attrs = {
+                        k: v
+                        for k, v in record.items()
+                        if v is not None and k not in disallowed_time_keys
+                    }
+                    xrdata[record["var_name"]].encoding["dtype"] = "float64"
+                    xrdata[record["var_name"]].encoding[
+                        "units"
+                    ] = "days since 1950-01-01 00:00:00"
+                    xrdata[record["var_name"]].encoding["calendar"] = "gregorian"
                 else:
-                    xrdata[record['var_name']].attrs = {k: v for k, v in record.items() if
-                                                  v is not None and k not in encoding_keys}
-                    encodings[record['var_name']] = {k: v for k, v in record.items() if
-                                                     v is not None and k in encoding_keys}
+                    xrdata[record["var_name"]].attrs = {
+                        k: v
+                        for k, v in record.items()
+                        if v is not None and k not in encoding_keys
+                    }
+                    encodings[record["var_name"]] = {
+                        k: v
+                        for k, v in record.items()
+                        if v is not None and k in encoding_keys
+                    }
         return xrdata, encodings

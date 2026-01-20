@@ -1,4 +1,3 @@
-from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -17,10 +16,10 @@ class Config(BaseSettings):
     copernicus_username: str
 
     model_config = SettingsConfigDict(
-        env_prefix="",                # no prefix (POSTGRES_HOST, etc.)
-        env_file=".env",               # default fallback
+        env_prefix="",  # no prefix (POSTGRES_HOST, etc.)
+        env_file=".env",  # default fallback
         env_file_encoding="utf-8",
-        extra="ignore",                # ignore unrelated env vars
+        extra="ignore",  # ignore unrelated env vars
         case_sensitive=False,
     )
 

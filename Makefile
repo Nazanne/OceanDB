@@ -22,4 +22,14 @@ build_image:
 	docker build -f docker_build/Dockerfile -t ocean_db_client:latest .
 
 psql:
-	docker exec -it postgres psql -h localhost -p 5432 -U postgres -d ocean
+	docker exec -it postgres psql -h localhost -p 5432 -U postgres -d ocean2
+
+.PHONY: format lint check
+
+format:
+	black src/OceanDB
+
+lint:
+	flake8 src/OceanDB
+
+check: format lint

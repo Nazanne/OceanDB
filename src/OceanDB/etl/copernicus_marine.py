@@ -1,32 +1,57 @@
-import os
 import copernicusmarine
-from OceanDB.config1 import Config
+from OceanDB.config import Config
+
 
 class OceanDBCopernicusMarine:
     def __init__(self):
         config = Config()
         try:
-            copernicusmarine.login(username=config.COPERNICUS_USERNAME, password=config.COPERNICUS_PASSWORD, force_overwrite=True)
+            copernicusmarine.login(
+                username=config.COPERNICUS_USERNAME,
+                password=config.COPERNICUS_PASSWORD,
+                force_overwrite=True,
+            )
         except Exception as ex:
-            print(f"Copernicus Marine Service login did not suceed, check your credentials in the .env file")
+            print(
+                f"Copernicus Marine Service login did not suceed, check your credentials in the .env file"
+            )
             raise Exception(ex)
 
     @staticmethod
     def build_copernicus_datasets():
         """Build a list of Copernicus Marine dataset configurations."""
         missions = [
-            "al", "alg", "c2", "c2n", "e1g", "e1", "e2", "en", "enn",
-            "g2", "h2a", "h2ag", "h2b",
-            "j1g", "j1", "j1n", "j2g", "j2", "j2n",
-            "j3", "j3n",
-            "s3a", "s3b", "s6a-lr",
-            "tp", "tpn",
-            "swon", "swonc",
+            "al",
+            "alg",
+            "c2",
+            "c2n",
+            "e1g",
+            "e1",
+            "e2",
+            "en",
+            "enn",
+            "g2",
+            "h2a",
+            "h2ag",
+            "h2b",
+            "j1g",
+            "j1",
+            "j1n",
+            "j2g",
+            "j2",
+            "j2n",
+            "j3",
+            "j3n",
+            "s3a",
+            "s3b",
+            "s6a-lr",
+            "tp",
+            "tpn",
+            "swon",
+            "swonc",
         ]
         my_versions = {m: "202411" for m in missions}
-        myint_versions = {
-
-        }
+        myint_versions = {}
 
         names = {
             "e1": "ERS-1 (only for dt)",
@@ -92,10 +117,12 @@ class OceanDBCopernicusMarine:
         """
 
         for dataset in datasets:
-            print(f"Downloading dataset: {dataset['id']} version: {dataset['version']} ")
+            print(
+                f"Downloading dataset: {dataset['id']} version: {dataset['version']} "
+            )
             get_result = copernicusmarine.get(
-                dataset_id=dataset['id'],
+                dataset_id=dataset["id"],
                 output_directory="/app/data/copernicus",
                 sync=True,
-                dataset_version=dataset['version']
+                dataset_version=dataset["version"],
             )

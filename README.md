@@ -53,8 +53,6 @@ The OceanDB package provides a CLI for initializing the database and ingesting d
 With Copernicus Marine Service Along Track downloaded to your computer. ensure that the ALONG_TRACK_DATA_DIRECTORY is set correctly in
 the .env file.  ALONG_TRACK_DATA_DIRECTORY should be the file path to the directory at which the SEALEVEL_GLO existis.  so ALONG_TRACK_DATA_DIRECTORY=/path/../../copernicus   
 
-
-
 <!-- TODO: figure out how to include these images -->
 <!-- ![Screenshot 2025-12-05 at 11.19.07 AM.png](docs/Screenshot%202025-12-05%20at%2011.19.07%E2%80%AFAM.png) -->
 
@@ -68,6 +66,14 @@ By default if no arguments are provided this CLI command will iterate over all o
     oceandb ingest-along-track s6a --end-date 2024-01-01 // Specify only end-date
     oceandb ingest-along-track s6a --start-date 2024-01-01  // Specify only start-datea
   ```
+
+
+Ingesting Eddy Data
+```bash
+oceandb ingest-eddy
+```
+
+
 
  
 4. **Querying SLA Data**
