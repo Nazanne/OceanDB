@@ -157,6 +157,53 @@ class AlongTrack(OceanDB):
     def __init__(self):
         super().__init__()
 
+    def geographic_nearest_neighbors_dt(
+            self,
+            latitudes: npt.NDArray[np.floating],
+            longitudes: npt.NDArray[np.floating],
+            dates: List[datetime],
+            time_window=timedelta(seconds=856710),
+            missions=None,
+    ) -> Iterable[OceanData[AlongTrackDataset] | None]:
+        """
+        Given an array of spatiotemporal points, returns the THREE closest data points to each
+        """
+
+        query = self.load_sql_file(self.nearest_neighbor_query)
+
+        if missions is None:
+            missions = self.missions
+
+        basin_ids = self.basin_mask(latitudes, longitudes)
+        connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
+        params = [
+            {
+                "latitude": latitude,
+                "longitude": longitude,
+                "central_date_time": date,
+                "connected_basin_ids": connected_basin_ids,
+                "time_delta": str(time_window / 2),
+                "missions": missions,
+            }
+            for latitude, longitude, date, connected_basin_ids in zip(
+                latitudes, longitudes, dates, connected_basin_ids
+            )
+        ]
+
+        with pg.connect(self.config.postgres_dsn) as connection:
+            with connection.cursor(row_factory=pg.rows.dict_row) as cursor:
+                cursor.executemany(query, params, returning=True)
+                while True:
+                    rows = cursor.fetchall()
+                    if not rows:
+                        yield None
+                    else:
+                        data =  self._build_along_track_dataset(rows)
+                        yield data
+                    if not cursor.nextset():
+                        break
+
+
     def _build_along_track_dataset(
             self,
             rows,
