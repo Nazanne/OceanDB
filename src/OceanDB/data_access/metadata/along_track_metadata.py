@@ -1,5 +1,4 @@
 import numpy as np
-
 from OceanDB.data_access.metadata.variable_spec import VariableSpec
 
 ALONG_TRACK_VARIABLES: dict[str, VariableSpec] = {

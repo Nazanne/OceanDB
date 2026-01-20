@@ -16,32 +16,14 @@ class AlongTrack(BaseQuery):
     Runs queries, returns datasets and bundles them into OceanData
 
     """
+
+    # Domain key used by BaseQuery metadata registry
+    ALONG_TRACK_DOMAIN = "along_track"
+
     missions = [
-        "al",
-        "alg",
-        "c2",
-        "c2n",
-        "e1g",
-        "e1",
-        "e2",
-        "en",
-        "enn",
-        "g2",
-        "h2a",
-        "h2b",
-        "j1g",
-        "j1",
-        "j1n",
-        "j2g",
-        "j2",
-        "j2n",
-        "j3",
-        "j3n",
-        "s3a",
-        "s3b",
-        "s6a",
-        "tp",
-        "tpn",
+        "al", "alg", "c2", "c2n", "e1g", "e1", "e2", "en", "enn",
+        "g2", "h2a", "h2b", "j1g", "j1", "j1n", "j2g", "j2", "j2n",
+        "j3", "j3n", "s3a", "s3b", "s6a", "tp", "tpn",
     ]
 
     nearest_neighbor_query = "queries/along_track/geographic_nearest_neighbor.sql"
