@@ -3,6 +3,9 @@ from __future__ import annotations
 from typing import Any, Mapping, Sequence, TypeVar
 import numpy as np
 import numpy.typing as npt
+import netCDF4 as nc
+
+from OceanDB.ocean_data.netcdf import write_dataset_to_group
 
 F = TypeVar("F", bound=str)
 
@@ -29,6 +32,22 @@ class OceanData:
 
     def datasets(self):
         return self._datasets.values()
+
+    def to_netcdf(self, path: str) -> None:
+        """
+        Write this OceanData object to a NetCDF file.
+
+        Each contained Dataset becomes a NetCDF group with the dataset's name.
+        """
+        with nc.Dataset(path, "w", format="NETCDF4") as root:
+            # Optional: global attrs (nice for provenance)
+            root.Conventions = "CF-1.9"
+            root.source = "OceanDB"
+
+            for name, dataset in self._datasets.items():
+                grp = root.createGroup(name)
+                write_dataset_to_group(grp, dataset, dim_name="obs")
+
 
     def __len__(self) -> int:
         """Number of datasets contained."""
