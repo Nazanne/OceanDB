@@ -27,25 +27,15 @@ def init():
     ocean_db_init = OceanDBInit()
     ocean_db_init.create_database()
     ocean_db_init.create_tables()
+    ocean_db_init.create_eddy_tables()
+
     ocean_db_init.create_indices()
+    ocean_db_init.create_eddy_indices()
     ocean_db_init.create_partitions("1990-01-01", "2025-11-01")
     # ocean_db_init.validate_schema()
     oceandb_etl = BaseETL()
     oceandb_etl.insert_basins_data()
     oceandb_etl.insert_basin_connections_data()
-
-
-@cli.command()
-def init_eddy():
-    ocean_db_init = OceanDBInit()
-    # ocean_db_init.create_database()
-    ocean_db_init.create_eddy_tables()
-
-
-@cli.command()
-def create_eddy_indices():
-    ocean_db_init = OceanDBInit()
-    ocean_db_init.create_eddy_indices()
 
 
 @cli.command()
