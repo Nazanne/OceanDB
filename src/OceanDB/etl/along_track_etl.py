@@ -9,7 +9,7 @@ import time
 import numpy as np
 from functools import cached_property
 from typing import Optional
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from OceanDB.etl.base_etl import BaseETL

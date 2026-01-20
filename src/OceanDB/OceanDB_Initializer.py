@@ -9,23 +9,25 @@ from OceanDB.OceanDB import OceanDB
 table_definitions = [
     {
         "name": "basin",
-        "filepath": "tables/create_basin_table.sql",
+        "filepath": "tables/basins/create_basin_table.sql",
         "params": {"table_name": "basin"},
     },
+
+    {
+        "name": "basin_connection",
+        "filepath": "tables/basins/create_basin_connection_table.sql",
+        "params": {"table_name": "basin_connection"},
+    },
+
     {
         "name": "along_track_metadata",
-        "filepath": "tables/create_along_track_metadata_table.sql",
+        "filepath": "tables/along_track/create_along_track_metadata_table.sql",
         "params": {"table_name": "along_track_metadata"},
     },
     {
         "name": "along_track",
-        "filepath": "tables/create_along_track_table.sql",
+        "filepath": "tables/along_track/create_along_track_table.sql",
         "params": {"table_name": "along_track"},
-    },
-    {
-        "name": "basin_connection",
-        "filepath": "tables/create_basin_connection_table.sql",
-        "params": {"table_name": "basin_connection"},
     },
 ]
 
@@ -33,12 +35,12 @@ table_definitions = [
 eddy_tables = [
     {
         "name": "eddy",
-        "filepath": "tables/create_eddy_table.sql",
+        "filepath": "tables/eddy/create_eddy_table.sql",
         "params": {"table_name": "eddy"},
     },
     {
         "name": "chelton_eddy",
-        "filepath": "tables/create_chelton_eddy_table.sql",
+        "filepath": "tables/eddy/create_chelton_eddy_table.sql",
         "params": {"table_name": "chelton_eddy"},
     },
 ]
@@ -47,62 +49,62 @@ eddy_tables = [
 sql_index_files = [
     {
         "name": "along_track_index_basin",
-        "filepath": "indices/create_along_track_index_basin.sql",
+        "filepath": "indices/along_track/create_along_track_index_basin.sql",
         "params": {"index_name": "along_track_index_basin"},
     },
     {
         "name": "along_track_index_date",
-        "filepath": "indices/create_along_track_index_date.sql",
+        "filepath": "indices/along_track/create_along_track_index_date.sql",
         "params": {"index_name": "along_track_index_date"},
     },
     {
         "name": "along_track_index_filename",
-        "filepath": "indices/create_along_track_index_filename.sql",
+        "filepath": "indices/along_track/create_along_track_index_filename.sql",
         "params": {"index_name": "along_track_index_filename"},
     },
     {
         "name": "along_track_index_mission",
-        "filepath": "indices/create_along_track_index_mission.sql",
+        "filepath": "indices/along_track/create_along_track_index_mission.sql",
         "params": {"index_name": "along_track_index_mission"},
     },
     {
         "name": "along_track_index_point",
-        "filepath": "indices/create_along_track_index_point.sql",
+        "filepath": "indices/along_track/create_along_track_index_point.sql",
         "params": {"index_name": "along_track_index_point"},
     },
     {
         "name": "along_track_index_point_date",
-        "filepath": "indices/create_along_track_index_point_date.sql",
+        "filepath": "indices/along_track/create_along_track_index_point_date.sql",
         "params": {"index_name": "along_track_index_point_date"},
     },
     {
         "name": "along_track_index_point_date_mission",
-        "filepath": "indices/create_along_track_index_point_date_mission.sql",
+        "filepath": "indices/along_track/create_along_track_index_point_date_mission.sql",
         "params": {"index_name": "along_track_index_point_date_mission"},
     },
     {
         "name": "along_track_index_point_date_mission_basin",
-        "filepath": "indices/create_along_track_index_point_date_mission_basin.sql",
+        "filepath": "indices/along_track/create_along_track_index_point_date_mission_basin.sql",
         "params": {"index_name": "along_track_index_point_date_mission_basin"},
     },
     {
         "name": "along_track_index_point_geom",
-        "filepath": "indices/create_along_track_index_point_geom.sql",
+        "filepath": "indices/along_track/create_along_track_index_point_geom.sql",
         "params": {"index_name": "along_track_index_point_geom"},
     },
     {
         "name": "along_track_index_time",
-        "filepath": "indices/create_along_track_index_time.sql",
+        "filepath": "indices/along_track/create_along_track_index_time.sql",
         "params": {"index_name": "along_track_index_time"},
     },
     {
         "name": "basin_connection_index_basin_id",
-        "filepath": "indices/create_basin_connection_index_basin_id.sql",
+        "filepath": "indices/basin/create_basin_connection_index_basin_id.sql",
         "params": {"index_name": "basin_connection_index_basin_id"},
     },
     {
         "name": "basin_index_geom",
-        "filepath": "indices/create_basin_index_geom.sql",
+        "filepath": "indices/basin/create_basin_index_geom.sql",
         "params": {"index_name": "basin_index_geom"},
     },
     # {
@@ -266,7 +268,7 @@ class OceanDBInit(OceanDB):
         if isinstance(max_date, str):
             max_date = datetime.strptime(max_date, "%Y-%m-%d")
 
-        query_filepath = "tables/create_along_track_table_partition.sql"
+        query_filepath = "tables/along_track/create_along_track_table_partition.sql"
 
         table_name = "along_track"
         current = min_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
