@@ -1,6 +1,8 @@
 import numpy as np
 from datetime import datetime
 from OceanDB.data_access.along_track import AlongTrack
+from OceanDB.ocean_data.datasets import AlongTrackDataset
+from OceanDB.ocean_data.ocean_data import OceanData
 
 along_track = AlongTrack()
 
@@ -12,13 +14,20 @@ latitude = -69
 longitude = 28.1
 date = datetime(year=2013, month=3, day=14, hour=23)
 
-sla_geographic = along_track.geographic_points_in_r_dt(
+along_track_query_result_iterator = along_track.geographic_points_in_r_dt(
     latitudes=np.array([latitude]), longitudes=np.array([longitude]), dates=[date]
 )
 
-sla_geographic = list(sla_geographic)
-output_data = sla_geographic[0]
-along_track_data = output_data['along_track']
+along_track_output_list = list(along_track_query_result_iterator)
+along_track_ocean_data: OceanData[AlongTrackDataset] = along_track_output_list[0]
+
+
+along_track_data = along_track_ocean_data['along_track']
+
+
+
+
+
 
 nearest_neighbor_ocean_data = along_track.geographic_nearest_neighbors_dt(
     latitudes=np.array([latitude]),

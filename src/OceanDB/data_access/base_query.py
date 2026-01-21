@@ -12,7 +12,7 @@ class BaseQuery(OceanDB):
         dataset_cls: Dataset,
         rows,
         domain: str,
-    ):
+    )->Dataset:
         """
         Construct a Dataset instance from raw database rows using
         domain-registered metadata.

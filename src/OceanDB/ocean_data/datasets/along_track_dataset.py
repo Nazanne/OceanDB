@@ -1,7 +1,16 @@
+from typing import Literal
 import numpy as np
 
 from OceanDB.ocean_data.ocean_data import Dataset, OceanDataFactory
-from OceanDB.ocean_data.schemas import AlongTrackRadiusFields
+
+
+AlongTrackRadiusFields = Literal[
+    "latitude",
+    "longitude",
+    "sla_filtered",
+    "distance",
+    "delta_t",
+]
 
 
 class AlongTrackDataset(Dataset[AlongTrackRadiusFields]):

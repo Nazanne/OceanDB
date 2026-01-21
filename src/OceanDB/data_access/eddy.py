@@ -185,6 +185,7 @@ class Eddy(BaseQuery):
 
 
         """
+
         eddy_query = """
         SELECT
             MIN(date_time) AS min_date,
@@ -198,7 +199,6 @@ class Eddy(BaseQuery):
             ON basin_connections.basin_id = basin.id
         WHERE eddy.track * eddy.cyclonic_type = %(track_id)s
         GROUP BY track, cyclonic_type;
-
         """
 
         along_query = """SELECT atk.file_name, atk.track, atk.cycle, atk.latitude, atk.longitude, atk.sla_unfiltered, atk.sla_filtered, atk.date_time as time, atk.dac, atk.ocean_tide, atk.internal_tide, atk.lwe, atk.mdt, atk.tpa_correction
