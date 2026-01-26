@@ -9,13 +9,25 @@ latitude = -69
 longitude = 28
 date = datetime(year=2013, month=3, day=14, hour=5)
 
-
-data = along_track.geographic_nearest_neighbors_dt(
+nearest_neighbor_ocean_data = along_track.geographic_nearest_neighbors_dt(
     latitudes=np.array([latitude]),
     longitudes=np.array([longitude]),
     dates=[date],
     missions=["al"],
 )
+nearest_neighbor_along_track_data = list(nearest_neighbor_ocean_data)[0]
 
-for d in data:
-    print(d)
+
+
+
+
+
+# data = along_track.geographic_nearest_neighbors_dt(
+#     latitudes=np.array([latitude]),
+#     longitudes=np.array([longitude]),
+#     dates=[date],
+#     missions=["al"],
+# )
+#
+# for d in data:
+#     print(d)

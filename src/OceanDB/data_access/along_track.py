@@ -1,3 +1,8 @@
+"""
+Projection-Aware Dataset Architecture
+
+"""
+
 from datetime import datetime, timedelta
 from typing import Iterable, List
 import psycopg as pg
@@ -5,8 +10,7 @@ import numpy.typing as npt
 import numpy as np
 
 from OceanDB.data_access.base_query import BaseQuery
-from OceanDB.ocean_data.datasets import AlongTrackDataset
-from OceanDB.ocean_data.ocean_data import OceanData
+from OceanDB.ocean_data.dataset import AlongTrackDataset, AlongTrackSpatioTemporalProjection
 
 
 class AlongTrack(BaseQuery):
@@ -15,7 +19,13 @@ class AlongTrack(BaseQuery):
 
     Runs queries, returns datasets and bundles them into OceanData
 
+
+    Query service for along-track altimetry data.
+
+    Executes parameterized geospatial and spatiotemporal SQL queries and
+    returns domain-level AlongTrackDataset objects instead of raw rows.
     """
+
 
     # Domain key used by BaseQuery metadata registry
     ALONG_TRACK_DOMAIN = "along_track"
@@ -42,19 +52,68 @@ class AlongTrack(BaseQuery):
         super().__init__()
 
 
-    # def _build_along_track_dataset(
-    #         self,
-    #         rows,
-    # ) -> OceanData[AlongTrackDataset]:
-    #     ocean_data = OceanData()
-    #     ocean_data.add(
-    #         AlongTrackDataset.from_rows(
-    #             rows,
-    #             variable_scale_factor=self.METADATA['along_track'],
-    #         )
-    #     )
-    #     return ocean_data
+    def geographic_points_in_r_dt(
+            self,
+            latitudes: npt.NDArray,
+            longitudes: npt.NDArray,
+            dates: List[datetime],
+            radii: List[float] | float = 500_000.0,
+            time_window: timedelta = timedelta(days=10),
+            missions: list[str] | None = None,
+    ):
+    # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
+        """
+        Query along-track points within spatial + temporal windows.
 
+        Yields one AlongTrackDataset per query point, or None if empty.
+        """
+
+        query = self.load_sql_file(self.along_track_spatiotemporal_query)
+
+        if missions is None:
+            missions = self.missions
+
+        if not isinstance(radii, list):
+            radii = [radii] * len(latitudes)
+
+        basin_ids = self.basin_mask(latitudes, longitudes)
+        connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
+
+        params = [
+            {
+                "longitude": lon,
+                "latitude": lat,
+                "distance": r,
+                "central_date_time": dt,
+                "time_delta": time_window,
+                "connected_basin_ids": basins,
+                "missions": [missions],
+            }
+            for lat, lon, dt, basins, r in zip(
+                latitudes, longitudes, dates, connected_basin_ids, radii
+            )
+        ]
+
+        with pg.connect(self.config.postgres_dsn) as conn:
+            with conn.cursor(row_factory=pg.rows.dict_row) as cur:
+                print(f"query {query}")
+                cur.executemany(query, params, returning=True)
+
+                while True:
+                    rows = cur.fetchall()
+
+                    if not rows:
+                        yield None
+                    else:
+                        along_track_ds = self.build_dataset(
+                            dataset_cls=AlongTrackDataset,
+                            rows=rows,
+                            schema=AlongTrackSpatioTemporalProjection,
+                        )
+                        yield along_track_ds
+
+                    if not cur.nextset():
+                        break
 
     def geographic_nearest_neighbors_dt(
             self,
@@ -62,8 +121,9 @@ class AlongTrack(BaseQuery):
             longitudes: npt.NDArray[np.floating],
             dates: List[datetime],
             time_window=timedelta(seconds=856710),
-            missions=None,
-    ) -> Iterable[OceanData[AlongTrackDataset] | None]:
+            missions=None
+    ):
+    # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
         """
         Given an array of spatiotemporal points, returns the THREE closest data points to each
         """
@@ -100,70 +160,8 @@ class AlongTrack(BaseQuery):
                         along_track_ds = self.build_dataset(
                             dataset_cls=AlongTrackDataset,
                             rows=rows,
-                            domain=self.ALONG_TRACK_DOMAIN,
+                            schema=AlongTrackSpatioTemporalProjection,
                         )
-                        yield self.build_ocean_data(along_track_ds)
+                        yield along_track_ds
                     if not cursor.nextset():
-                        break
-
-
-    def geographic_points_in_r_dt(
-            self,
-            latitudes: npt.NDArray,
-            longitudes: npt.NDArray,
-            dates: List[datetime],
-            radii: List[float] | float = 500_000.0,
-            time_window: timedelta = timedelta(days=10),
-            missions: list[str] | None = None,
-    ) -> Iterable[OceanData[AlongTrackDataset] | None]:
-        """
-        Query along-track points within spatial + temporal windows.
-
-        Yields one AlongTrackDataset per query point, or None if empty.
-        """
-
-        query = self.load_sql_file(self.along_track_spatiotemporal_query)
-
-        if missions is None:
-            missions = self.missions
-
-        if not isinstance(radii, list):
-            radii = [radii] * len(latitudes)
-
-        basin_ids = self.basin_mask(latitudes, longitudes)
-        connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
-
-        params = [
-            {
-                "longitude": lon,
-                "latitude": lat,
-                "distance": r,
-                "central_date_time": dt,
-                "time_delta": time_window,
-                "connected_basin_ids": basins,
-                "missions": [missions],
-            }
-            for lat, lon, dt, basins, r in zip(
-                latitudes, longitudes, dates, connected_basin_ids, radii
-            )
-        ]
-
-        with pg.connect(self.config.postgres_dsn) as conn:
-            with conn.cursor(row_factory=pg.rows.dict_row) as cur:
-                cur.executemany(query, params, returning=True)
-
-                while True:
-                    rows = cur.fetchall()
-
-                    if not rows:
-                        yield None
-                    else:
-                        along_track_ds = self.build_dataset(
-                            dataset_cls=AlongTrackDataset,
-                            rows=rows,
-                            domain=self.ALONG_TRACK_DOMAIN,
-                        )
-                        yield self.build_ocean_data(along_track_ds)
-
-                    if not cur.nextset():
                         break

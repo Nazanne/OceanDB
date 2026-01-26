@@ -1,4 +1,5 @@
 SELECT
+    date_time,
     latitude,
     longitude,
     sla_filtered,
