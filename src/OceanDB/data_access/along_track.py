@@ -10,7 +10,8 @@ import numpy.typing as npt
 import numpy as np
 
 from OceanDB.data_access.base_query import BaseQuery
-from OceanDB.ocean_data.dataset import AlongTrackDataset, AlongTrackSpatioTemporalProjection
+from OceanDB.ocean_data.datasets.along_track_dataset import AlongTrackDataset, AlongTrackSpatioTemporalProjection
+
 
 
 class AlongTrack(BaseQuery):
@@ -28,7 +29,7 @@ class AlongTrack(BaseQuery):
 
 
     # Domain key used by BaseQuery metadata registry
-    ALONG_TRACK_DOMAIN = "along_track"
+    # ALONG_TRACK_DOMAIN = "along_track"
 
     missions = [
         "al", "alg", "c2", "c2n", "e1g", "e1", "e2", "en", "enn",
@@ -46,11 +47,8 @@ class AlongTrack(BaseQuery):
         "queries/along_track/geographic_points_in_spatialtemporal_window.sql"
     )
 
-
-
     def __init__(self):
         super().__init__()
-
 
     def geographic_points_in_r_dt(
             self,

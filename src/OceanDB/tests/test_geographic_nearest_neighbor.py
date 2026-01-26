@@ -15,19 +15,4 @@ nearest_neighbor_ocean_data = along_track.geographic_nearest_neighbors_dt(
     dates=[date],
     missions=["al"],
 )
-nearest_neighbor_along_track_data = list(nearest_neighbor_ocean_data)[0]
-
-
-
-
-
-
-# data = along_track.geographic_nearest_neighbors_dt(
-#     latitudes=np.array([latitude]),
-#     longitudes=np.array([longitude]),
-#     dates=[date],
-#     missions=["al"],
-# )
-#
-# for d in data:
-#     print(d)
+result = list(nearest_neighbor_ocean_data)[0]
