@@ -4,7 +4,7 @@ Projection-Aware Dataset Architecture
 """
 
 from datetime import datetime, timedelta
-from typing import Iterable, List, Literal, get_args
+from typing import Iterable, List, Literal, get_args, Self
 import psycopg as pg
 import numpy.typing as npt
 import numpy as np
@@ -13,56 +13,6 @@ from OceanDB.data_access.base_query import BaseQuery
 from OceanDB.ocean_data.dataset import Dataset
 import OceanDB.ocean_data.fields.fields as fields
 from OceanDB.ocean_data.ocean_data import OceanDataField
-
-
-Mission = Literal[
-    "al",
-    "alg",
-    "c2",
-    "c2n",
-    "e1g",
-    "e1",
-    "e2",
-    "en",
-    "enn",
-    "g2",
-    "h2a",
-    "h2b",
-    "j1g",
-    "j1",
-    "j1n",
-    "j2g",
-    "j2",
-    "j2n",
-    "j3",
-    "j3n",
-    "s3a",
-    "s3b",
-    "s6a",
-    "tp",
-    "tpn",
-]
-all_missions = list(get_args(Mission))
-
-
-along_track_fields = Literal[
-    "latitude",
-    "longitude",
-    "date_time",
-    "file_name",
-    "mission",
-    "track",
-    "cycle",
-    "basin_id",
-    "sla_unfiltered",
-    "sla_filtered",
-    "dac",
-    "ocean_tide",
-    "internal_tide",
-    "lwe",
-    "mdt",
-    "tpa_correction",
-]
 
 
 class AlongTrack(BaseQuery):
@@ -77,6 +27,79 @@ class AlongTrack(BaseQuery):
     Executes parameterized geospatial and spatiotemporal SQL queries and
     returns domain-level AlongTrackDataset objects instead of raw rows.
     """
+
+
+    Mission = Literal[
+        "al",
+        "alg",
+        "c2",
+        "c2n",
+        "e1g",
+        "e1",
+        "e2",
+        "en",
+        "enn",
+        "g2",
+        "h2a",
+        "h2b",
+        "j1g",
+        "j1",
+        "j1n",
+        "j2g",
+        "j2",
+        "j2n",
+        "j3",
+        "j3n",
+        "s3a",
+        "s3b",
+        "s6a",
+        "tp",
+        "tpn",
+    ]
+    all_missions = list(get_args(Mission))
+
+
+    along_track_fields = Literal[
+        "latitude",
+        "longitude",
+        "date_time",
+        "file_name",
+        "mission",
+        "track",
+        "cycle",
+        "basin_id",
+        "sla_unfiltered",
+        "sla_filtered",
+        "dac",
+        "ocean_tide",
+        "internal_tide",
+        "lwe",
+        "mdt",
+        "tpa_correction",
+    ]
+
+    schema : dict[along_track_fields, OceanDataField] = {
+        "latitude": fields.latitude,
+        "longitude": fields.longitude,
+        "date_time": fields.date_time,
+        "file_name": fields.file_name,
+        "mission": fields.mission,
+        "track": fields.track,
+        "cycle": fields.cycle,
+        "basin_id": fields.basin_id,
+        "sla_unfiltered": fields.sla_unfiltered,
+        "sla_filtered": fields.sla_filtered,
+        "dac": fields.dac,
+        "ocean_tide": fields.ocean_tide,
+        "internal_tide": fields.internal_tide,
+        "lwe": fields.lwe,
+        "mdt": fields.mdt,
+        "tpa_correction": fields.tpa_correction,
+        }
+
+
+
+
 
     # Domain key used by BaseQuery metadata registry
     # ALONG_TRACK_DOMAIN = "along_track"
@@ -109,25 +132,6 @@ class AlongTrack(BaseQuery):
         Yields one AlongTrackDataset per query point, or None if empty.
         """
 
-        schema : dict[along_track_fields, OceanDataField] = {
-            "latitude": fields.latitude,
-            "longitude": fields.longitude,
-            "date_time": fields.date_time,
-            "file_name": fields.file_name,
-            "mission": fields.mission,
-            "track": fields.track,
-            "cycle": fields.cycle,
-            "basin_id": fields.basin_id,
-            "sla_unfiltered": fields.sla_unfiltered,
-            "sla_filtered": fields.sla_filtered,
-            "dac": fields.dac,
-            "ocean_tide": fields.ocean_tide,
-            "internal_tide": fields.internal_tide,
-            "lwe": fields.lwe,
-            "mdt": fields.mdt,
-            "tpa_correction": fields.tpa_correction,
-            }
-
         query = self.load_sql_file(self.along_track_spatiotemporal_query)
 
         if not isinstance(radii, list):
@@ -150,7 +154,7 @@ class AlongTrack(BaseQuery):
                 latitudes, longitudes, dates, connected_basin_ids, radii
             )
         ]
-        return self.do_query(query, schema, params)
+        return self.do_query(query, self.schema, params)
 
     def geographic_nearest_neighbors_dt(
         self,
