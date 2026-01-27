@@ -1,12 +1,10 @@
-from typing import Mapping, TypeVar, Generic
-import numpy as np
-import numpy.typing as npt
+from typing import Mapping
+from abc import ABC
 
-F = TypeVar("F", bound=str)
-FloatArray = npt.NDArray[np.floating]
+from ..ocean_data.ocean_data import OceanDataField
 
 
-class Dataset(Mapping[F, FloatArray]):
+class Dataset[K, T](Mapping[K, T], ABC):
     """
     Immutable, column-oriented dataset.
 
@@ -17,14 +15,14 @@ class Dataset(Mapping[F, FloatArray]):
         self,
         *,
         name: str,
-        data: Mapping[F, FloatArray],
-        dtypes: Mapping[F, type],
+        data: Mapping[K, T],
+        dtypes: Mapping[K, type],
     ):
         self.name = name
         self._data = dict(data)
         self._dtypes = dict(dtypes)
 
-    def __getitem__(self, key: F) -> FloatArray:
+    def __getitem__(self, key: K) -> T:
         return self._data[key]
 
     def __iter__(self):
@@ -34,6 +32,15 @@ class Dataset(Mapping[F, FloatArray]):
         # number of columns, not rows
         return len(self._data)
 
-    @property
-    def n_rows(self) -> int:
-        return len(next(iter(self._data.values())))
+    def to_xarray(self):
+        raise NotImplementedError()
+
+    def to_netcdf(self):
+        raise NotImplementedError()
+
+    @classmethod
+    def schema(cls) -> Mapping[K, OceanDataField]:
+        """
+        The schema for allowed input data for this dataset
+        """
+        raise NotImplementedError("Each dataset must define a schema")

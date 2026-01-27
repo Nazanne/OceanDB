@@ -10,7 +10,7 @@ import numpy.typing as npt
 import numpy as np
 
 from OceanDB.data_access.base_query import BaseQuery
-from OceanDB.ocean_data.datasets.along_track_dataset import AlongTrackDataset, AlongTrackSpatioTemporalProjection
+from OceanDB.ocean_data.datasets.along_track_dataset import AlongTrackDataset, AlongTrackSpatioTemporalProjectionSchema
 
 
 Mission = Literal["al", "alg", "c2", "c2n", "e1g", "e1", "e2", "en", "enn", "g2", "h2a", "h2b", "j1g", "j1", "j1n", "j2g", "j2", "j2n", "j3", "j3n", "s3a", "s3b", "s6a", "tp", "tpn"]
@@ -100,7 +100,6 @@ class AlongTrack(BaseQuery):
                         along_track_ds = self.build_dataset(
                             dataset_cls=AlongTrackDataset,
                             rows=rows,
-                            schema=AlongTrackSpatioTemporalProjection,
                         )
                         yield along_track_ds
 

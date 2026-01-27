@@ -15,21 +15,20 @@ class BaseQuery(OceanDB):
 
     METADATA = METADATA_REGISTRY
 
-    def build_dataset(self, *, dataset_cls, rows, schema):
+    def build_dataset(self, *, dataset_cls: type[Dataset], rows):
         data = {}
         dtypes = {}
 
-        for name, field in schema.items():
-            values = [row[field.postgres_column_name] for row in rows]
+        for name, field in dataset_cls.schema().items():
+            fname = field.postgres_column_or_query_name
+            values = [row[fname] for row in rows if fname in row]
             data[name] = np.asarray(values)
             dtypes[name] = field.python_type
 
         return dataset_cls(
-            dataset=Dataset(
-                name="along_track_spatiotemporal",
-                data=data,
-                dtypes=dtypes,
-            )
+            name="along_track_spatiotemporal",
+            data=data,
+            dtypes=dtypes,
         )
 
 
