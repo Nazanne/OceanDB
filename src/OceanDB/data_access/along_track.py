@@ -67,7 +67,7 @@ class AlongTrack(BaseQuery):
         query = self.load_sql_file(self.along_track_spatiotemporal_query)
 
         if not isinstance(radii, list):
-            radii = [radii] * len(latitudes)
+            radii = [float(radii)] * len(latitudes)
 
         basin_ids = self.basin_mask(latitudes, longitudes)
         connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
