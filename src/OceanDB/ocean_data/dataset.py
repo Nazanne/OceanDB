@@ -1,10 +1,9 @@
 from typing import Mapping
-from abc import ABC
 
 from ..ocean_data.ocean_data import OceanDataField
 
 
-class Dataset[K, T](Mapping[K, T], ABC):
+class Dataset[K:str, T](Mapping[K, T]):
     """
     Immutable, column-oriented dataset.
 
@@ -17,10 +16,12 @@ class Dataset[K, T](Mapping[K, T], ABC):
         name: str,
         data: Mapping[K, T],
         dtypes: Mapping[K, type],
+        schema: Mapping[K, OceanDataField],
     ):
         self.name = name
         self._data = dict(data)
         self._dtypes = dict(dtypes)
+        self.schema = schema
 
     def __getitem__(self, key: K) -> T:
         return self._data[key]
@@ -37,10 +38,3 @@ class Dataset[K, T](Mapping[K, T], ABC):
 
     def to_netcdf(self):
         raise NotImplementedError()
-
-    @classmethod
-    def schema(cls) -> Mapping[K, OceanDataField]:
-        """
-        The schema for allowed input data for this dataset
-        """
-        raise NotImplementedError("Each dataset must define a schema")

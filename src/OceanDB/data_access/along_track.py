@@ -11,11 +11,59 @@ import numpy as np
 
 from OceanDB.data_access.base_query import BaseQuery
 from OceanDB.ocean_data.dataset import Dataset
-from OceanDB.ocean_data.datasets.along_track_dataset import AlongTrackSchema, AlongTrackSpatioTemporalProjectionSchema
+import OceanDB.ocean_data.fields.fields as fields
+from OceanDB.ocean_data.ocean_data import OceanDataField
 
 
-Mission = Literal["al", "alg", "c2", "c2n", "e1g", "e1", "e2", "en", "enn", "g2", "h2a", "h2b", "j1g", "j1", "j1n", "j2g", "j2", "j2n", "j3", "j3n", "s3a", "s3b", "s6a", "tp", "tpn"]
+Mission = Literal[
+    "al",
+    "alg",
+    "c2",
+    "c2n",
+    "e1g",
+    "e1",
+    "e2",
+    "en",
+    "enn",
+    "g2",
+    "h2a",
+    "h2b",
+    "j1g",
+    "j1",
+    "j1n",
+    "j2g",
+    "j2",
+    "j2n",
+    "j3",
+    "j3n",
+    "s3a",
+    "s3b",
+    "s6a",
+    "tp",
+    "tpn",
+]
 all_missions = list(get_args(Mission))
+
+
+along_track_fields = Literal[
+    "latitude",
+    "longitude",
+    "date_time",
+    "file_name",
+    "mission",
+    "track",
+    "cycle",
+    "basin_id",
+    "sla_unfiltered",
+    "sla_filtered",
+    "dac",
+    "ocean_tide",
+    "internal_tide",
+    "lwe",
+    "mdt",
+    "tpa_correction",
+]
+
 
 class AlongTrack(BaseQuery):
     """
@@ -30,17 +78,15 @@ class AlongTrack(BaseQuery):
     returns domain-level AlongTrackDataset objects instead of raw rows.
     """
 
-
     # Domain key used by BaseQuery metadata registry
     # ALONG_TRACK_DOMAIN = "along_track"
 
-
     nearest_neighbor_query = "queries/along_track/geographic_nearest_neighbor.sql"
-    along_track_spatiotemporal_query = "queries/along_track/geographic_points_in_spatialtemporal_window.sql"
-
-    projected_spatio_temporal_query_mask = (
-        "queries/along_track/geographic_points_in_spatialtemporal_projected_window_nomask.sql"
+    along_track_spatiotemporal_query = (
+        "queries/along_track/geographic_points_in_spatialtemporal_window.sql"
     )
+
+    projected_spatio_temporal_query_mask = "queries/along_track/geographic_points_in_spatialtemporal_projected_window_nomask.sql"
     projected_spatio_temporal_query_no_mask = (
         "queries/along_track/geographic_points_in_spatialtemporal_window.sql"
     )
@@ -49,20 +95,38 @@ class AlongTrack(BaseQuery):
         super().__init__()
 
     def geographic_points_in_r_dt(
-            self,
-            latitudes: npt.NDArray,
-            longitudes: npt.NDArray,
-            dates: List[datetime],
-            radii: List[float] | float = 500_000.0,
-            time_window: timedelta = timedelta(days=10),
-            missions: list[Mission] = all_missions,
-    ) -> Iterable[Dataset[AlongTrackSchema.fields, npt.NDArray[np.floating]] | None]:
-
+        self,
+        latitudes: npt.NDArray,
+        longitudes: npt.NDArray,
+        dates: List[datetime],
+        radii: List[float] | float = 500_000.0,
+        time_window: timedelta = timedelta(days=10),
+        missions: list[Mission] = all_missions,
+    ) -> Iterable[Dataset[along_track_fields, npt.NDArray[np.floating]] | None]:
         """
         Query along-track points within spatial + temporal windows.
 
         Yields one AlongTrackDataset per query point, or None if empty.
         """
+
+        schema : dict[along_track_fields, OceanDataField] = {
+            "latitude": fields.latitude,
+            "longitude": fields.longitude,
+            "date_time": fields.date_time,
+            "file_name": fields.file_name,
+            "mission": fields.mission,
+            "track": fields.track,
+            "cycle": fields.cycle,
+            "basin_id": fields.basin_id,
+            "sla_unfiltered": fields.sla_unfiltered,
+            "sla_filtered": fields.sla_filtered,
+            "dac": fields.dac,
+            "ocean_tide": fields.ocean_tide,
+            "internal_tide": fields.internal_tide,
+            "lwe": fields.lwe,
+            "mdt": fields.mdt,
+            "tpa_correction": fields.tpa_correction,
+            }
 
         query = self.load_sql_file(self.along_track_spatiotemporal_query)
 
@@ -86,34 +150,17 @@ class AlongTrack(BaseQuery):
                 latitudes, longitudes, dates, connected_basin_ids, radii
             )
         ]
-
-        with pg.connect(self.config.postgres_dsn) as conn:
-            with conn.cursor(row_factory=pg.rows.dict_row) as cur:
-                print(f"query {query}")
-                cur.executemany(query, params, returning=True)
-
-                while True:
-                    rows = cur.fetchall()
-
-                    if not rows:
-                        yield None
-                    else:
-                        along_track_ds : Dataset[AlongTrackSchema.fields, npt.NDArray[np.floating]] = \
-                            self.build_dataset(rows=rows, schema=AlongTrackSchema().dict())
-                        yield along_track_ds
-
-                    if not cur.nextset():
-                        break
+        return self.do_query(query, schema, params)
 
     def geographic_nearest_neighbors_dt(
-            self,
-            latitudes: npt.NDArray[np.floating],
-            longitudes: npt.NDArray[np.floating],
-            dates: List[datetime],
-            time_window=timedelta(seconds=856710),
-            missions: list[Mission] = all_missions,
+        self,
+        latitudes: npt.NDArray[np.floating],
+        longitudes: npt.NDArray[np.floating],
+        dates: List[datetime],
+        time_window=timedelta(seconds=856710),
+        missions: list[Mission] = all_missions,
     ):
-    # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
+        # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
         """
         Given an array of spatiotemporal points, returns the THREE closest data points to each
         """
