@@ -10,7 +10,8 @@ import numpy.typing as npt
 import numpy as np
 
 from OceanDB.data_access.base_query import BaseQuery
-from OceanDB.ocean_data.datasets.along_track_dataset import AlongTrackDataset, AlongTrackSpatioTemporalProjectionSchema
+from OceanDB.ocean_data.dataset import Dataset
+from OceanDB.ocean_data.datasets.along_track_dataset import AlongTrackSchema, AlongTrackSpatioTemporalProjectionSchema
 
 
 Mission = Literal["al", "alg", "c2", "c2n", "e1g", "e1", "e2", "en", "enn", "g2", "h2a", "h2b", "j1g", "j1", "j1n", "j2g", "j2", "j2n", "j3", "j3n", "s3a", "s3b", "s6a", "tp", "tpn"]
@@ -55,8 +56,8 @@ class AlongTrack(BaseQuery):
             radii: List[float] | float = 500_000.0,
             time_window: timedelta = timedelta(days=10),
             missions: list[Mission] = all_missions,
-    ):
-    # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
+    ) -> Iterable[Dataset[AlongTrackSchema.fields, npt.NDArray[np.floating]] | None]:
+
         """
         Query along-track points within spatial + temporal windows.
 
@@ -97,10 +98,8 @@ class AlongTrack(BaseQuery):
                     if not rows:
                         yield None
                     else:
-                        along_track_ds = self.build_dataset(
-                            dataset_cls=AlongTrackDataset,
-                            rows=rows,
-                        )
+                        along_track_ds : Dataset[AlongTrackSchema.fields, npt.NDArray[np.floating]] = \
+                            self.build_dataset(rows=rows, schema=AlongTrackSchema().dict())
                         yield along_track_ds
 
                     if not cur.nextset():

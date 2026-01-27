@@ -220,33 +220,3 @@ class AlongTrackSpatioTemporalProjectionSchema(AlongTrackSchema):
         postgres_type="double precision",
         postgres_column_or_query_name="delta_t",
     )
-
-FloatArray = npt.NDArray[np.floating]
-
-
-class AlongTrackDataset(Dataset[AlongTrackSchema.fields, FloatArray]):
-    """
-    Domain-specific view over an along-track Dataset.
-
-    Represents a sequence of altimetry observations along a satellite track.
-    """
-
-    @classmethod
-    def schema(cls):
-        return AlongTrackSpatioTemporalProjectionSchema().dict()
-
-
-    @property
-    def n_rows(self) -> int:
-        return len(self._data["latitude"])
-
-    # -----------------
-    # Domain invariants
-    # -----------------
-    def __post_init__(self):
-        required = {"latitude", "longitude", "date_time"}
-        missing = required - set(self)
-        if missing:
-            raise ValueError(f"Missing required fields: {missing}")
-
-

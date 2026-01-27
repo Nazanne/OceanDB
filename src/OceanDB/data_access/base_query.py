@@ -2,7 +2,11 @@ from OceanDB.OceanDB import OceanDB
 from OceanDB.data_access.metadata import METADATA_REGISTRY
 import numpy as np
 
+from typing import TypeVar
+
 from OceanDB.ocean_data.dataset import Dataset
+
+D = TypeVar('D', bound=Dataset)
 
 
 class BaseQuery(OceanDB):
@@ -15,17 +19,19 @@ class BaseQuery(OceanDB):
 
     METADATA = METADATA_REGISTRY
 
-    def build_dataset(self, *, dataset_cls: type[Dataset], rows):
+    def build_dataset[K,T](self, *, schema, rows):
         data = {}
         dtypes = {}
 
-        for name, field in dataset_cls.schema().items():
+        for name, field in schema.items():
             fname = field.postgres_column_or_query_name
-            values = [row[fname] for row in rows if fname in row]
+            if not fname in row:
+                continue
+            values = [row[fname] for row in rows]
             data[name] = np.asarray(values)
             dtypes[name] = field.python_type
 
-        return dataset_cls(
+        return Dataset[K,T](
             name="along_track_spatiotemporal",
             data=data,
             dtypes=dtypes,
