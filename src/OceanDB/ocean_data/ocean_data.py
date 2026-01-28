@@ -10,6 +10,7 @@ class OceanDataField:
     python_type: type
     postgres_type: str
     postgres_column_or_query_name: str
+    postgres_table_name: str
     custom_calculation: str | None = None
 
     def to_sql_query(self):
@@ -17,7 +18,7 @@ class OceanDataField:
         if self.custom_calculation:
             postgres_calc = sql.SQL(self.custom_calculation)
         else:
-            postgres_calc = sql.Identifier(self.postgres_column_or_query_name)
+            postgres_calc = sql.Identifier(self.postgres_table_name, self.postgres_column_or_query_name)
 
         return sql.SQL("{postgres_calc} AS {output_name}").format(
                 postgres_calc=postgres_calc,

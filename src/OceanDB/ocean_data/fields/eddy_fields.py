@@ -10,6 +10,7 @@ latitude = OceanDataField(
     python_type=np.floating,
     postgres_type="real",
     postgres_column_or_query_name="latitude",
+    postgres_table_name="eddy",
 )
 
 longitude = OceanDataField(
@@ -19,6 +20,7 @@ longitude = OceanDataField(
     python_type=np.floating,
     postgres_type="real",
     postgres_column_or_query_name="longitude",
+    postgres_table_name="eddy",
 )
 
 date_time = OceanDataField(
@@ -28,6 +30,7 @@ date_time = OceanDataField(
     python_type=datetime,
     postgres_type="timestamp",
     postgres_column_or_query_name="date_time",
+    postgres_table_name="eddy",
 )
 
 track = OceanDataField(
@@ -37,6 +40,7 @@ track = OceanDataField(
     python_type=int,
     postgres_type="integer",
     postgres_column_or_query_name="track",
+    postgres_table_name="eddy",
 )
 
 cyclonic_type = OceanDataField(
@@ -46,6 +50,7 @@ cyclonic_type = OceanDataField(
     python_type=int,
     postgres_type="smallint",
     postgres_column_or_query_name="cyclonic_type",
+    postgres_table_name="eddy",
 )
 
 amplitude = OceanDataField(
@@ -55,6 +60,7 @@ amplitude = OceanDataField(
     python_type=np.floating,
     postgres_type="smallint",
     postgres_column_or_query_name="amplitude",
+    postgres_table_name="eddy",
 )
 
 effective_radius = OceanDataField(
@@ -64,6 +70,7 @@ effective_radius = OceanDataField(
     python_type=np.floating,
     postgres_type="smallint",
     postgres_column_or_query_name="effective_radius",
+    postgres_table_name="eddy",
 )
 
 effective_area = OceanDataField(
@@ -73,6 +80,7 @@ effective_area = OceanDataField(
     python_type=np.floating,
     postgres_type="real",
     postgres_column_or_query_name="effective_area",
+    postgres_table_name="eddy",
 )
 
 
@@ -83,6 +91,7 @@ cost_association = OceanDataField(
     python_type=np.floating,
     postgres_type="real",
     postgres_column_or_query_name="cost_association",
+    postgres_table_name="eddy",
 )
 
 observation_flag = OceanDataField(
@@ -92,6 +101,7 @@ observation_flag = OceanDataField(
     python_type=bool,
     postgres_type="boolean",
     postgres_column_or_query_name="observation_flag",
+    postgres_table_name="eddy",
 )
 
 observation_number = OceanDataField(
@@ -101,6 +111,7 @@ observation_number = OceanDataField(
     python_type=int,
     postgres_type="smallint",
     postgres_column_or_query_name="observation_number",
+    postgres_table_name="eddy",
 )
 
 distance = OceanDataField(
@@ -116,6 +127,7 @@ distance = OceanDataField(
             eddy_point
         )
     """,
+    postgres_table_name="eddy",
 )
 
 delta_t = OceanDataField(
@@ -128,7 +140,9 @@ delta_t = OceanDataField(
     custom_calculation="""
         EXTRACT(EPOCH FROM (%(central_date_time)s - date_time))
     """,
+    postgres_table_name="eddy",
 )
+
 speed_average = OceanDataField(
     nc_name="speed_average",
     nc_scale=1,
@@ -136,6 +150,7 @@ speed_average = OceanDataField(
     python_type=int,
     postgres_type="integer",
     postgres_column_or_query_name="speed_average",
+    postgres_table_name="eddy",
 )
 
 speed_radius = OceanDataField(
@@ -145,6 +160,7 @@ speed_radius = OceanDataField(
     python_type=int,
     postgres_type="smallint",
     postgres_column_or_query_name="speed_radius",
+    postgres_table_name="eddy",
 )
 
 speed_area = OceanDataField(
@@ -154,6 +170,7 @@ speed_area = OceanDataField(
     python_type=np.floating,
     postgres_type="real",
     postgres_column_or_query_name="speed_area",
+    postgres_table_name="eddy",
 )
 
 

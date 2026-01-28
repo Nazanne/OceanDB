@@ -10,6 +10,7 @@ latitude = OceanDataField(
     python_type=np.float64,
     postgres_type="double precision",
     postgres_column_or_query_name="latitude",
+    postgres_table_name="along_track",
 )
 
 longitude = OceanDataField(
@@ -19,6 +20,7 @@ longitude = OceanDataField(
     python_type=np.float64,
     postgres_type="double precision",
     postgres_column_or_query_name="longitude",
+    postgres_table_name="along_track",
 )
 
 date_time = OceanDataField(
@@ -28,6 +30,7 @@ date_time = OceanDataField(
     python_type=datetime,
     postgres_type="timestamp",
     postgres_column_or_query_name="date_time",
+    postgres_table_name="along_track",
 )
 
 file_name = OceanDataField(
@@ -37,6 +40,7 @@ file_name = OceanDataField(
     python_type=str,
     postgres_type="text",
     postgres_column_or_query_name="file_name",
+    postgres_table_name="along_track",
 )
 
 mission = OceanDataField(
@@ -46,6 +50,7 @@ mission = OceanDataField(
     python_type=str,
     postgres_type="text",
     postgres_column_or_query_name="mission",
+    postgres_table_name="along_track",
 )
 
 track = OceanDataField(
@@ -55,6 +60,7 @@ track = OceanDataField(
     python_type=int,
     postgres_type="smallint",
     postgres_column_or_query_name="track",
+    postgres_table_name="along_track",
 )
 
 cycle = OceanDataField(
@@ -64,6 +70,7 @@ cycle = OceanDataField(
     python_type=int,
     postgres_type="smallint",
     postgres_column_or_query_name="cycle",
+    postgres_table_name="along_track",
 )
 
 basin_id = OceanDataField(
@@ -73,6 +80,7 @@ basin_id = OceanDataField(
     python_type=int,
     postgres_type="smallint",
     postgres_column_or_query_name="basin_id",
+    postgres_table_name="along_track",
 )
 
 sla_unfiltered = OceanDataField(
@@ -82,6 +90,7 @@ sla_unfiltered = OceanDataField(
     python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="sla_unfiltered",
+    postgres_table_name="along_track",
 )
 
 sla_filtered = OceanDataField(
@@ -91,6 +100,7 @@ sla_filtered = OceanDataField(
     python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="sla_filtered",
+    postgres_table_name="along_track",
 )
 
 dac = OceanDataField(
@@ -100,6 +110,7 @@ dac = OceanDataField(
     python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="dac",
+    postgres_table_name="along_track",
 )
 
 ocean_tide = OceanDataField(
@@ -109,6 +120,7 @@ ocean_tide = OceanDataField(
     python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="ocean_tide",
+    postgres_table_name="along_track",
 )
 
 internal_tide = OceanDataField(
@@ -118,6 +130,7 @@ internal_tide = OceanDataField(
     python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="internal_tide",
+    postgres_table_name="along_track",
 )
 
 lwe = OceanDataField(
@@ -127,6 +140,7 @@ lwe = OceanDataField(
     python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="lwe",
+    postgres_table_name="along_track",
 )
 
 mdt = OceanDataField(
@@ -136,6 +150,7 @@ mdt = OceanDataField(
     python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="mdt",
+    postgres_table_name="along_track",
 )
 
 tpa_correction = OceanDataField(
@@ -145,6 +160,7 @@ tpa_correction = OceanDataField(
     python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="tpa_correction",
+    postgres_table_name="along_track",
 )
 
 distance = OceanDataField(
@@ -154,6 +170,7 @@ distance = OceanDataField(
     python_type=np.float64,
     postgres_type="double precision",
     postgres_column_or_query_name="distance",
+    postgres_table_name="along_track",
     custom_calculation="ST_Distance(ST_MakePoint(%(longitude)s, %(latitude)s),along_track_point)",
 )
 
@@ -164,5 +181,6 @@ delta_t = OceanDataField(
     python_type=np.float64,
     postgres_type="double precision",
     postgres_column_or_query_name="delta_t",
+    postgres_table_name="along_track",
     custom_calculation="EXTRACT(EPOCH FROM (%(central_date_time)s - date_time))",
 )
