@@ -21,7 +21,12 @@ def test_geographic_points_in_r_dt():
     fields = list(along_track_schema.keys())
 
     along_track_query_result_iterator = along_track.geographic_points_in_r_dt(
-        latitudes=np.array([latitude]), longitudes=np.array([longitude]), dates=[date], fields=fields, radii=radius, time_window = time_window,
+        latitudes=np.array([latitude]),
+        longitudes=np.array([longitude]),
+        dates=[date],
+        fields=fields,
+        radii=radius,
+        time_window=time_window,
     )
 
     along_track_output_list = list(along_track_query_result_iterator)
