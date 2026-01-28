@@ -43,7 +43,7 @@ class BaseQuery(OceanDB):
             if not fname in rows[0]:
                 continue
             values = [row[fname] for row in rows]
-            data[name] = np.asarray(values)
+            data[name] = np.asarray(values, dtype=field.python_type)
             dtypes[name] = field.python_type
 
         return Dataset[K, T](
