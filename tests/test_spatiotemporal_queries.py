@@ -37,7 +37,5 @@ def test_geographic_points_in_r_dt():
 
         # assert result[field].dtype == result.schema[field].python_type
     # assert "dt_global_alg_phy_l3_1hz_20190102_20240205.nc" in result['file_name']
-    # assert ((result["date_time"] - date) <= time_window).all()
-    # assert (result['distance'] <= radius).all()
-
-test_geographic_points_in_r_dt()
+    assert ((result["date_time"] - date) <= time_window).all()
+    assert (result["distance"] <= radius).all()
