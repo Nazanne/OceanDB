@@ -16,21 +16,12 @@ def test_geographic_points_in_r_dt():
 
     time_window = timedelta(days=10)
 
-    # fields = list(along_track_schema.keys())
-    fields = [
-        "date_time",
-        "latitude",
-        "longitude",
-        "sla_filtered",
-        "delta_t",
-        "distance",
-    ]
-
+    fields = list(along_track_schema.keys())
     along_track_query_result_iterator = along_track.geographic_nearest_neighbors_dt(
         latitudes=np.array([latitude]),
         longitudes=np.array([longitude]),
         dates=[date],
-        # fields=fields,
+        fields=fields,
         time_window=time_window,
     )
 

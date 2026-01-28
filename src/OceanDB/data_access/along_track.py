@@ -127,6 +127,7 @@ class AlongTrack(BaseQuery):
         latitudes: npt.NDArray[np.floating],
         longitudes: npt.NDArray[np.floating],
         dates: List[datetime],
+        fields: list[along_track_fields],
         time_window=timedelta(seconds=856710),
         missions: list[Mission] = all_missions,
     ) -> Iterable[Dataset[along_track_fields, npt.NDArray[np.floating]] | None]:
@@ -134,7 +135,11 @@ class AlongTrack(BaseQuery):
         Given an array of spatiotemporal points, returns the THREE closest data points to each
         """
 
-        query = self.load_sql_file(self.nearest_neighbor_query)
+        query_string = self.load_sql_file(self.nearest_neighbor_query)
+        query = pg.sql.SQL(query_string).format(
+            fields=pg.sql.SQL(', ').join([
+                along_track_schema[field].to_sql_query() for field in fields
+        ]))
 
         basin_ids = self.basin_mask(latitudes, longitudes)
         connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
