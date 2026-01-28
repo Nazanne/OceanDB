@@ -129,8 +129,7 @@ class AlongTrack(BaseQuery):
         dates: List[datetime],
         time_window=timedelta(seconds=856710),
         missions: list[Mission] = all_missions,
-    ):
-        # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
+    ) -> Iterable[Dataset[along_track_fields, npt.NDArray[np.floating]] | None]:
         """
         Given an array of spatiotemporal points, returns the THREE closest data points to each
         """
@@ -153,19 +152,4 @@ class AlongTrack(BaseQuery):
             )
         ]
 
-        with pg.connect(self.config.postgres_dsn) as connection:
-            with connection.cursor(row_factory=pg.rows.dict_row) as cursor:
-                cursor.executemany(query, params, returning=True)
-                while True:
-                    rows = cursor.fetchall()
-                    if not rows:
-                        yield None
-                    else:
-                        along_track_ds = self.build_dataset(
-                            dataset_cls=AlongTrackDataset,
-                            rows=rows,
-                            schema=AlongTrackSpatioTemporalProjection,
-                        )
-                        yield along_track_ds
-                    if not cursor.nextset():
-                        break
+        return self.execute_query(query, along_track_schema, params)
