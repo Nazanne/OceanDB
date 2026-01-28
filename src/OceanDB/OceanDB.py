@@ -100,15 +100,15 @@ class OceanDB:
             self.logger.info(f"Error while Executing Query: {ex}")
             return None
 
-    def execute_query(self, table, query):
-        try:
-            with pg.connect(self.connection_string) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(query)
-                    conn.commit()
-        except Exception as ex:
-            self.logger.info(f"Error executing {table}")
-            self.logger.info(f"Error while Executing Query {ex}")
+    # def execute_query(self, table, query):
+    #     try:
+    #         with pg.connect(self.connection_string) as conn:
+    #             with conn.cursor() as cur:
+    #                 cur.execute(query)
+    #                 conn.commit()
+    #     except Exception as ex:
+    #         self.logger.info(f"Error executing {table}")
+    #         self.logger.info(f"Error while Executing Query {ex}")
 
     def get_engine(self, echo: bool = False):
         """Return a SQLAlchemy engine connected to the OceanDB Postgres database."""

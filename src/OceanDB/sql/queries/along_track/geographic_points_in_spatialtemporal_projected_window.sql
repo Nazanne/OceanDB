@@ -4,7 +4,7 @@ SELECT
 	 sla_filtered,
 	 date_time,
 	 ST_Distance(ST_MakePoint(%(longitude)s, %(latitude)s),along_track_point) as distance,
-	 EXTRACT(EPOCH FROM (%(central_date_time)s - date_time)) AS time_difference_secs
+	 EXTRACT(EPOCH FROM (%(central_date_time)s - date_time)) AS delta_t
 FROM along_track alt
 LEFT JOIN basin on ST_Intersects(basin.basin_geog, alt.along_track_point)
 WHERE ST_Within(along_track_point::geometry,ST_MakeEnvelope(%(xmin)s, %(ymin)s,%(xmax)s,%(ymax)s,4326))
