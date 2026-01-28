@@ -31,6 +31,9 @@ class Dataset(Mapping[K, T], Generic[K, T]):
     def __getitem__(self, key: K) -> T:
         return self._data[key]
 
+    def __contains__(self, key) -> bool:
+        return key in self._data
+
     def __iter__(self):
         return iter(self._data)
 
