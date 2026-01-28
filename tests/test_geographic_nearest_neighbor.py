@@ -31,3 +31,4 @@ def test_geographic_points_in_r_dt():
     for field in fields:
         assert field in result
     assert ((result["date_time"] - date) <= time_window).all()
+    assert not ((result["date_time"] - date) <= timedelta(seconds=10)).all()
