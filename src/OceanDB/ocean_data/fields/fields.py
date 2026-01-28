@@ -7,7 +7,7 @@ latitude = OceanDataField(
     nc_name="latitude",
     nc_scale=1,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="double precision",
     postgres_column_or_query_name="latitude",
 )
@@ -16,7 +16,7 @@ longitude = OceanDataField(
     nc_name="longitude",
     nc_scale=1,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="double precision",
     postgres_column_or_query_name="longitude",
 )
@@ -79,7 +79,7 @@ sla_unfiltered = OceanDataField(
     nc_name="sla_unfiltered",
     nc_scale=1000,  # meters → millimeters
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="sla_unfiltered",
 )
@@ -88,7 +88,7 @@ sla_filtered = OceanDataField(
     nc_name="sla_filtered",
     nc_scale=1000,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="sla_filtered",
 )
@@ -97,7 +97,7 @@ dac = OceanDataField(
     nc_name="dac",
     nc_scale=1000,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="dac",
 )
@@ -106,7 +106,7 @@ ocean_tide = OceanDataField(
     nc_name="ocean_tide",
     nc_scale=1000,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="ocean_tide",
 )
@@ -115,7 +115,7 @@ internal_tide = OceanDataField(
     nc_name="internal_tide",
     nc_scale=1000,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="internal_tide",
 )
@@ -124,7 +124,7 @@ lwe = OceanDataField(
     nc_name="lwe",
     nc_scale=1000,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="lwe",
 )
@@ -133,7 +133,7 @@ mdt = OceanDataField(
     nc_name="mdt",
     nc_scale=1000,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="mdt",
 )
@@ -142,7 +142,7 @@ tpa_correction = OceanDataField(
     nc_name="tpa_correction",
     nc_scale=1000,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="smallint",
     postgres_column_or_query_name="tpa_correction",
 )
@@ -151,7 +151,7 @@ distance = OceanDataField(
     nc_name="distance",
     nc_scale=1,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="double precision",
     postgres_column_or_query_name="distance",
     custom_calculation="ST_Distance(ST_MakePoint(%(longitude)s, %(latitude)s),along_track_point)",
@@ -161,7 +161,7 @@ delta_t = OceanDataField(
     nc_name="delta_t",
     nc_scale=1,
     nc_offset=0,
-    python_type=np.floating,
+    python_type=np.float64,
     postgres_type="double precision",
     postgres_column_or_query_name="delta_t",
     custom_calculation="EXTRACT(EPOCH FROM (%(central_date_time)s - date_time))",
