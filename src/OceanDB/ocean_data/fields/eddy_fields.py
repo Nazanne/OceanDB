@@ -157,8 +157,7 @@ speed_area = OceanDataField(
 )
 
 
-
-EddySchema = {
+eddy_schema = {
     "latitude": latitude,
     "longitude": longitude,
     "time": date_time,

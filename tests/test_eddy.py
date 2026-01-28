@@ -1,9 +1,12 @@
-# from datetime import datetime
-#
-# # from OceanDB.data_access import Eddy
-#
-# eddy = Eddy()
-# # eddy.eddy_with_id_querytrack_id(track_id=4)
+from datetime import datetime
+
+from OceanDB.data_access import Eddy
+
+eddy = Eddy()
+eddy.eddy_with_track_id(track_id=4)
+
+
+
 # #
 # # tracks = eddy.get_eddy_tracks_from_times(
 # #     start_date=datetime(2013, 1, 1), end_date=datetime(2013, 4, 1)

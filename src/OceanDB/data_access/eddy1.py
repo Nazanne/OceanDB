@@ -15,43 +15,43 @@
 #
 #     eddy_table_name: str = "eddy"
 #
-#     along_track_near_eddy_query = "queries/eddy/along_near_eddy.sql"
-#     eddy_with_id_query = "queries/eddy/eddy_from_track_id.sql"
-#
+    # along_track_near_eddy_query = "queries/eddy/along_near_eddy.sql"
+    # eddy_with_id_query = "queries/eddy/eddy_from_track_id.sql"
+
 #     # Domain keys used by BaseQuery
 #     EDDY_DOMAIN = "eddy"
 #     ALONG_TRACK_DOMAIN = "along_track"
 #
 #
-#     def eddy_with_track_id(
-#         self,
-#         track_id: int,
-#     ) -> OceanData[EddyDataset] | None:
-#         """
-#         Retrieve all observations for a single eddy track.
-#
-#         Returns
-#         -------
-#         OceanData[EddyDataset] | None
-#         """
-#         query = self.load_sql_file(self.eddy_with_id_query)
-#         values = {"track_id": track_id}
-#
-#         with pg.connect(self.config.postgres_dsn) as conn:
-#             with conn.cursor(row_factory=pg.rows.dict_row) as cur:
-#                 cur.execute(query, values)
-#                 rows = cur.fetchall()
-#
-#         if not rows:
-#             return None
-#
-#         eddy_ds = self.build_dataset(
-#             dataset_cls=EddyDataset,
-#             rows=rows,
-#             domain=self.EDDY_DOMAIN,
-#         )
-#
-#         return self.build_ocean_data(eddy_ds)
+    def eddy_with_track_id(
+        self,
+        track_id: int,
+    ) -> OceanData[EddyDataset] | None:
+        """
+        Retrieve all observations for a single eddy track.
+
+        Returns
+        -------
+        OceanData[EddyDataset] | None
+        """
+        query = self.load_sql_file(self.eddy_with_id_query)
+        values = {"track_id": track_id}
+
+        with pg.connect(self.config.postgres_dsn) as conn:
+            with conn.cursor(row_factory=pg.rows.dict_row) as cur:
+                cur.execute(query, values)
+                rows = cur.fetchall()
+
+        if not rows:
+            return None
+
+        eddy_ds = self.build_dataset(
+            dataset_cls=EddyDataset,
+            rows=rows,
+            domain=self.EDDY_DOMAIN,
+        )
+
+        return self.build_ocean_data(eddy_ds)
 #
 #     # def along_track_points_near_eddy(self, track_id):
 #     #     """

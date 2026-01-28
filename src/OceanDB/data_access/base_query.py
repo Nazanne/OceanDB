@@ -51,11 +51,35 @@ class BaseQuery(OceanDB):
         )
 
     def execute_query(
+            self,
+            query: str,
+            schema: dict[K, OceanDataField],
+            params: dict[str, Any]
+    ) -> Dataset[K, T]:
+        """
+
+        """
+        with pg.connect(self.config.postgres_dsn) as conn:
+            with conn.cursor(row_factory=pg.rows.dict_row) as cur:
+                cur.execute(query, params)
+
+                rows : list[dict[str, T]]= cur.fetchall()
+
+                if not rows:
+                    return None
+                else:
+                    dataset = self.build_dataset(schema=schema, rows=rows)
+                    return dataset
+
+    def execute_batch_query(
         self,
         query: str,
         schema: dict[K, OceanDataField],
         params: list[dict[str, Any]],
     ) -> Iterable[Dataset[K, T] | None]:
+        """
+
+        """
         with pg.connect(self.config.postgres_dsn) as conn:
             with conn.cursor(row_factory=pg.rows.dict_row) as cur:
                 cur.executemany(query, params, returning=True)
