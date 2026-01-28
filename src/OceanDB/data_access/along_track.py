@@ -122,50 +122,50 @@ class AlongTrack(BaseQuery):
         # execute the query
         return self.execute_query(query, along_track_schema, params)
 
-    # def geographic_nearest_neighbors_dt(
-    #     self,
-    #     latitudes: npt.NDArray[np.floating],
-    #     longitudes: npt.NDArray[np.floating],
-    #     dates: List[datetime],
-    #     time_window=timedelta(seconds=856710),
-    #     missions: list[Mission] = all_missions,
-    # ):
-    #     # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
-    #     """
-    #     Given an array of spatiotemporal points, returns the THREE closest data points to each
-    #     """
-    #
-    #     query = self.load_sql_file(self.nearest_neighbor_query)
-    #
-    #     basin_ids = self.basin_mask(latitudes, longitudes)
-    #     connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
-    #     params = [
-    #         {
-    #             "latitude": latitude,
-    #             "longitude": longitude,
-    #             "central_date_time": date,
-    #             "connected_basin_ids": connected_basin_ids,
-    #             "time_delta": str(time_window / 2),
-    #             "missions": missions,
-    #         }
-    #         for latitude, longitude, date, connected_basin_ids in zip(
-    #             latitudes, longitudes, dates, connected_basin_ids
-    #         )
-    #     ]
-    #
-    #     with pg.connect(self.config.postgres_dsn) as connection:
-    #         with connection.cursor(row_factory=pg.rows.dict_row) as cursor:
-    #             cursor.executemany(query, params, returning=True)
-    #             while True:
-    #                 rows = cursor.fetchall()
-    #                 if not rows:
-    #                     yield None
-    #                 else:
-    #                     along_track_ds = self.build_dataset(
-    #                         dataset_cls=AlongTrackDataset,
-    #                         rows=rows,
-    #                         schema=AlongTrackSpatioTemporalProjection,
-    #                     )
-    #                     yield along_track_ds
-    #                 if not cursor.nextset():
-    #                     break
+    def geographic_nearest_neighbors_dt(
+        self,
+        latitudes: npt.NDArray[np.floating],
+        longitudes: npt.NDArray[np.floating],
+        dates: List[datetime],
+        time_window=timedelta(seconds=856710),
+        missions: list[Mission] = all_missions,
+    ):
+        # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
+        """
+        Given an array of spatiotemporal points, returns the THREE closest data points to each
+        """
+
+        query = self.load_sql_file(self.nearest_neighbor_query)
+
+        basin_ids = self.basin_mask(latitudes, longitudes)
+        connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
+        params = [
+            {
+                "latitude": latitude,
+                "longitude": longitude,
+                "central_date_time": date,
+                "connected_basin_ids": connected_basin_ids,
+                "time_delta": str(time_window / 2),
+                "missions": missions,
+            }
+            for latitude, longitude, date, connected_basin_ids in zip(
+                latitudes, longitudes, dates, connected_basin_ids
+            )
+        ]
+
+        with pg.connect(self.config.postgres_dsn) as connection:
+            with connection.cursor(row_factory=pg.rows.dict_row) as cursor:
+                cursor.executemany(query, params, returning=True)
+                while True:
+                    rows = cursor.fetchall()
+                    if not rows:
+                        yield None
+                    else:
+                        along_track_ds = self.build_dataset(
+                            dataset_cls=AlongTrackDataset,
+                            rows=rows,
+                            schema=AlongTrackSpatioTemporalProjection,
+                        )
+                        yield along_track_ds
+                    if not cursor.nextset():
+                        break
