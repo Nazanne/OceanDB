@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from datetime import datetime
 FloatArray = npt.NDArray[np.floating]
 
+
 @dataclass(frozen=True)
-class AlongTrackDataset:
+class AlongTrackDataset(Dataset):
     """
     Domain-specific view over an along-track Dataset.
 
@@ -240,6 +241,8 @@ query, and is used to construct aligned runtime Datasets. It is
 intentionally separate from both the full storage schema and the
 domain dataset semantics.
 """
+
+
 AlongTrackSpatioTemporalProjection = {
     # base fields
     "latitude": AlongTrackFields["latitude"],

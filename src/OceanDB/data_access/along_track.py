@@ -13,7 +13,6 @@ from OceanDB.data_access.base_query import BaseQuery
 from OceanDB.ocean_data.datasets.along_track_dataset import AlongTrackDataset, AlongTrackSpatioTemporalProjection
 
 
-
 class AlongTrack(BaseQuery):
     """
     Query/Service object

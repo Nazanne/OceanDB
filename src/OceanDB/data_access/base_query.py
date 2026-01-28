@@ -15,7 +15,7 @@ class BaseQuery(OceanDB):
 
     METADATA = METADATA_REGISTRY
 
-    def build_dataset(self, *, dataset_cls, rows, schema):
+    def build_dataset(self, *, dataset_cls: type, rows: dict, schema):
         data = {}
         dtypes = {}
 
