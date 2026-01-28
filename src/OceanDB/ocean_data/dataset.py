@@ -3,7 +3,12 @@ from typing import Mapping
 from ..ocean_data.ocean_data import OceanDataField
 
 
-class Dataset[K:str, T](Mapping[K, T]):
+from typing import TypeVar, Generic, Mapping
+
+K = TypeVar("K", bound=str)
+T = TypeVar("T")
+
+class Dataset(Mapping[K, T], Generic[K, T]):
     """
     Immutable, column-oriented dataset.
 

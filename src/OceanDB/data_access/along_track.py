@@ -4,16 +4,14 @@ Projection-Aware Dataset Architecture
 """
 
 from datetime import datetime, timedelta
-from typing import Iterable, List, Literal, get_args, Self
+from typing import Iterable, List, Literal, get_args
 import psycopg as pg
 import numpy.typing as npt
 import numpy as np
 
 from OceanDB.data_access.base_query import BaseQuery
+from OceanDB.data_access.schema.along_track_schema import along_track_fields, along_track_schema
 from OceanDB.ocean_data.dataset import Dataset
-import OceanDB.ocean_data.fields.fields as fields
-from OceanDB.ocean_data.ocean_data import OceanDataField
-
 
 class AlongTrack(BaseQuery):
     """
@@ -58,53 +56,6 @@ class AlongTrack(BaseQuery):
     ]
     all_missions = list(get_args(Mission))
 
-
-    along_track_fields = Literal[
-        "latitude",
-        "longitude",
-        "date_time",
-        "file_name",
-        "mission",
-        "track",
-        "cycle",
-        "basin_id",
-        "sla_unfiltered",
-        "sla_filtered",
-        "dac",
-        "ocean_tide",
-        "internal_tide",
-        "lwe",
-        "mdt",
-        "tpa_correction",
-        "distance",
-        "delta_t",
-    ]
-
-    schema : dict[along_track_fields, OceanDataField] = {
-        "latitude": fields.latitude,
-        "longitude": fields.longitude,
-        "date_time": fields.date_time,
-        "file_name": fields.file_name,
-        "mission": fields.mission,
-        "track": fields.track,
-        "cycle": fields.cycle,
-        "basin_id": fields.basin_id,
-        "sla_unfiltered": fields.sla_unfiltered,
-        "sla_filtered": fields.sla_filtered,
-        "dac": fields.dac,
-        "ocean_tide": fields.ocean_tide,
-        "internal_tide": fields.internal_tide,
-        "lwe": fields.lwe,
-        "mdt": fields.mdt,
-        "tpa_correction": fields.tpa_correction,
-        "distance": fields.distance,
-        "delta_t": fields.delta_t,
-        }
-
-
-
-
-
     # Domain key used by BaseQuery metadata registry
     # ALONG_TRACK_DOMAIN = "along_track"
 
@@ -140,9 +91,8 @@ class AlongTrack(BaseQuery):
         query_string = self.load_sql_file(self.along_track_spatiotemporal_query)
         query = pg.sql.SQL(query_string).format(
             fields=pg.sql.SQL(', ').join([
-                self.schema[field].to_sql_query() for field in fields
+                along_track_schema[field].to_sql_query() for field in fields
         ]))
-
 
         if not isinstance(radii, list):
             radii = [float(radii)] * len(latitudes)
@@ -164,52 +114,52 @@ class AlongTrack(BaseQuery):
                 latitudes, longitudes, dates, connected_basin_ids, radii
             )
         ]
-        return self.do_query(query, self.schema, params)
+        return self.execute_query(query, along_track_schema, params)
 
-    def geographic_nearest_neighbors_dt(
-        self,
-        latitudes: npt.NDArray[np.floating],
-        longitudes: npt.NDArray[np.floating],
-        dates: List[datetime],
-        time_window=timedelta(seconds=856710),
-        missions: list[Mission] = all_missions,
-    ):
-        # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
-        """
-        Given an array of spatiotemporal points, returns the THREE closest data points to each
-        """
-
-        query = self.load_sql_file(self.nearest_neighbor_query)
-
-        basin_ids = self.basin_mask(latitudes, longitudes)
-        connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
-        params = [
-            {
-                "latitude": latitude,
-                "longitude": longitude,
-                "central_date_time": date,
-                "connected_basin_ids": connected_basin_ids,
-                "time_delta": str(time_window / 2),
-                "missions": missions,
-            }
-            for latitude, longitude, date, connected_basin_ids in zip(
-                latitudes, longitudes, dates, connected_basin_ids
-            )
-        ]
-
-        with pg.connect(self.config.postgres_dsn) as connection:
-            with connection.cursor(row_factory=pg.rows.dict_row) as cursor:
-                cursor.executemany(query, params, returning=True)
-                while True:
-                    rows = cursor.fetchall()
-                    if not rows:
-                        yield None
-                    else:
-                        along_track_ds = self.build_dataset(
-                            dataset_cls=AlongTrackDataset,
-                            rows=rows,
-                            schema=AlongTrackSpatioTemporalProjection,
-                        )
-                        yield along_track_ds
-                    if not cursor.nextset():
-                        break
+    # def geographic_nearest_neighbors_dt(
+    #     self,
+    #     latitudes: npt.NDArray[np.floating],
+    #     longitudes: npt.NDArray[np.floating],
+    #     dates: List[datetime],
+    #     time_window=timedelta(seconds=856710),
+    #     missions: list[Mission] = all_missions,
+    # ):
+    #     # ) -> Iterable[OceanData[AlongTrackDataset] | None]:
+    #     """
+    #     Given an array of spatiotemporal points, returns the THREE closest data points to each
+    #     """
+    #
+    #     query = self.load_sql_file(self.nearest_neighbor_query)
+    #
+    #     basin_ids = self.basin_mask(latitudes, longitudes)
+    #     connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
+    #     params = [
+    #         {
+    #             "latitude": latitude,
+    #             "longitude": longitude,
+    #             "central_date_time": date,
+    #             "connected_basin_ids": connected_basin_ids,
+    #             "time_delta": str(time_window / 2),
+    #             "missions": missions,
+    #         }
+    #         for latitude, longitude, date, connected_basin_ids in zip(
+    #             latitudes, longitudes, dates, connected_basin_ids
+    #         )
+    #     ]
+    #
+    #     with pg.connect(self.config.postgres_dsn) as connection:
+    #         with connection.cursor(row_factory=pg.rows.dict_row) as cursor:
+    #             cursor.executemany(query, params, returning=True)
+    #             while True:
+    #                 rows = cursor.fetchall()
+    #                 if not rows:
+    #                     yield None
+    #                 else:
+    #                     along_track_ds = self.build_dataset(
+    #                         dataset_cls=AlongTrackDataset,
+    #                         rows=rows,
+    #                         schema=AlongTrackSpatioTemporalProjection,
+    #                     )
+    #                     yield along_track_ds
+    #                 if not cursor.nextset():
+    #                     break
