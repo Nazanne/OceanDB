@@ -76,6 +76,8 @@ class AlongTrack(BaseQuery):
         "lwe",
         "mdt",
         "tpa_correction",
+        "distance",
+        "delta_t",
     ]
 
     schema : dict[along_track_fields, OceanDataField] = {
@@ -95,6 +97,8 @@ class AlongTrack(BaseQuery):
         "lwe": fields.lwe,
         "mdt": fields.mdt,
         "tpa_correction": fields.tpa_correction,
+        "distance": fields.distance,
+        "delta_t": fields.delta_t,
         }
 
 
@@ -122,6 +126,7 @@ class AlongTrack(BaseQuery):
         latitudes: npt.NDArray,
         longitudes: npt.NDArray,
         dates: List[datetime],
+        fields: list[along_track_fields],
         radii: List[float] | float = 500_000.0,
         time_window: timedelta = timedelta(days=10),
         missions: list[Mission] = all_missions,
@@ -132,7 +137,12 @@ class AlongTrack(BaseQuery):
         Yields one AlongTrackDataset per query point, or None if empty.
         """
 
-        query = self.load_sql_file(self.along_track_spatiotemporal_query)
+        query_string = self.load_sql_file(self.along_track_spatiotemporal_query)
+        query = pg.sql.SQL(query_string).format(
+            fields=pg.sql.SQL(', ').join([
+                self.schema[field].to_sql_query() for field in fields
+        ]))
+
 
         if not isinstance(radii, list):
             radii = [float(radii)] * len(latitudes)

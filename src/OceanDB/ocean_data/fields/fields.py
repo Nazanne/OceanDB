@@ -153,6 +153,7 @@ distance = OceanDataField(
     python_type=float,
     postgres_type="double precision",
     postgres_column_or_query_name="distance",
+    custom_calculation="ST_Distance(ST_MakePoint(%(longitude)s, %(latitude)s),along_track_point)",
 )
 
 delta_t = OceanDataField(
@@ -162,4 +163,5 @@ delta_t = OceanDataField(
     python_type=float,  #
     postgres_type="double precision",
     postgres_column_or_query_name="delta_t",
+    custom_calculation="EXTRACT(EPOCH FROM (%(central_date_time)s - date_time))",
 )
