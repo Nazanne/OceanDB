@@ -1,7 +1,7 @@
-from ...ocean_data.ocean_data import OceanDataField
-
 import numpy as np
 from datetime import datetime
+
+from OceanDB.ocean_data.ocean_data import OceanDataField
 
 latitude = OceanDataField(
     nc_name="latitude",

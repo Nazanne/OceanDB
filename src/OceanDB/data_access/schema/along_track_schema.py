@@ -1,7 +1,8 @@
 from typing import Literal
 
-from OceanDB.ocean_data.fields import fields
+from OceanDB.ocean_data.fields import along_track_fields as atk_fields
 from OceanDB.ocean_data.ocean_data import OceanDataField
+
 
 along_track_fields = Literal[
     "latitude",
@@ -25,22 +26,22 @@ along_track_fields = Literal[
 ]
 
 along_track_schema: dict[along_track_fields, OceanDataField] = {
-    "latitude": fields.latitude,
-    "longitude": fields.longitude,
-    "date_time": fields.date_time,
-    "file_name": fields.file_name,
-    "mission": fields.mission,
-    "track": fields.track,
-    "cycle": fields.cycle,
-    "basin_id": fields.basin_id,
-    "sla_unfiltered": fields.sla_unfiltered,
-    "sla_filtered": fields.sla_filtered,
-    "dac": fields.dac,
-    "ocean_tide": fields.ocean_tide,
-    "internal_tide": fields.internal_tide,
-    "lwe": fields.lwe,
-    "mdt": fields.mdt,
-    "tpa_correction": fields.tpa_correction,
-    "distance": fields.distance,
-    "delta_t": fields.delta_t,
+    "latitude": atk_fields.latitude,
+    "longitude": atk_fields.longitude,
+    "date_time": atk_fields.date_time,
+    "file_name": atk_fields.file_name,
+    "mission": atk_fields.mission,
+    "track": atk_fields.track,
+    "cycle": atk_fields.cycle,
+    "basin_id": atk_fields.basin_id,
+    "sla_unfiltered": atk_fields.sla_unfiltered,
+    "sla_filtered": atk_fields.sla_filtered,
+    "dac": atk_fields.dac,
+    "ocean_tide": atk_fields.ocean_tide,
+    "internal_tide": atk_fields.internal_tide,
+    "lwe": atk_fields.lwe,
+    "mdt": atk_fields.mdt,
+    "tpa_correction": atk_fields.tpa_correction,
+    "distance": atk_fields.distance,
+    "delta_t": atk_fields.delta_t,
 }
