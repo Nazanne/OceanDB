@@ -30,7 +30,4 @@ def test_geographic_points_in_r_dt():
     assert result is not None
     for field in fields:
         assert field in result
-
-        # assert result[field].dtype == result.schema[field].python_type
-    # assert "dt_global_alg_phy_l3_1hz_20190102_20240205.nc" in result['file_name']
     assert ((result["date_time"] - date) <= time_window).all()
