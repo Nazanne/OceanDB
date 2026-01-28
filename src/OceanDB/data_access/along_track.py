@@ -88,18 +88,23 @@ class AlongTrack(BaseQuery):
         Yields one AlongTrackDataset per query point, or None if empty.
         """
 
+        # format what parameters we want out of the query
         query_string = self.load_sql_file(self.along_track_spatiotemporal_query)
         query = pg.sql.SQL(query_string).format(
             fields=pg.sql.SQL(', ').join([
                 along_track_schema[field].to_sql_query() for field in fields
         ]))
 
+
+        # input niceties---allow users to specify one radius to be used for all query points
         if not isinstance(radii, list):
             radii = [float(radii)] * len(latitudes)
 
+        # connected basins
         basin_ids = self.basin_mask(latitudes, longitudes)
         connected_basin_ids = list(map(self.basin_connection_map.get, basin_ids))
 
+        # format params
         params = [
             {
                 "longitude": lon,
@@ -114,6 +119,7 @@ class AlongTrack(BaseQuery):
                 latitudes, longitudes, dates, connected_basin_ids, radii
             )
         ]
+        # execute the query
         return self.execute_query(query, along_track_schema, params)
 
     # def geographic_nearest_neighbors_dt(
